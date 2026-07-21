@@ -91,7 +91,6 @@ layerId = bold;
 width = 800;
 }
 );
-unicode = E000;
 }
 );
 metrics = (
