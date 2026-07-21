@@ -114,7 +114,9 @@ class GeometryTests(unittest.TestCase):
             self.assertEqual(circle.cy, -400.0)
 
     def test_spokes_are_evenly_spaced_on_outer_live_circle(self):
-        geometry = build_geometry(1000, self.config(height=1000, spokes=8, rings=0))
+        geometry = build_geometry(
+            1000, self.config(width=1000, height=1000, spokes=8, rings=0)
+        )
         self.assertEqual(len(geometry.spokes), 8)
         endpoints = {(round(line.x2, 6), round(line.y2, 6)) for line in geometry.spokes}
         self.assertIn((916.666667, 500.0), endpoints)
@@ -124,7 +126,9 @@ class GeometryTests(unittest.TestCase):
             self.assertAlmostEqual(radius, geometry.live_radius)
 
     def test_material_keyline_proportions(self):
-        geometry = build_geometry(1000, self.config(height=1000, showKeylines=True))
+        geometry = build_geometry(
+            1000, self.config(width=1000, height=1000, showKeylines=True)
+        )
         keylines = {shape.name: shape for shape in geometry.keylines}
         diameter = geometry.live_radius * 2
         self.assertAlmostEqual(keylines["circle"].width, diameter)
@@ -145,7 +149,9 @@ class GeometryTests(unittest.TestCase):
         self.assertTrue(math.isfinite(line_width_for_scale(1.0, 0)))
 
     def test_snapshot_is_deterministic(self):
-        geometry = build_geometry(240, self.config(height=240, columns=24, rows=24))
+        geometry = build_geometry(
+            240, self.config(width=240, height=240, columns=24, rows=24)
+        )
         self.assertEqual(snapshot(geometry), snapshot(geometry))
         self.assertEqual(snapshot(geometry)["canvas"], [0.0, 0.0, 240.0, 240.0])
         self.assertEqual(len(snapshot(geometry)["rings"]), 10)

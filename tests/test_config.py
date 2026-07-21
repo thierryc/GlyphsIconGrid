@@ -21,7 +21,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.columns, 24)
         self.assertEqual(config.rows, 24)
         self.assertEqual(config.height, 700.0)
-        self.assertEqual(config.width, 700.0)
+        self.assertEqual(config.width, 1500.0)
         self.assertEqual(config.origin, "bottom-left")
         self.assertEqual(config.baseline_offset, 0.0)
         self.assertEqual(config.padding, 2.0)
@@ -86,7 +86,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.columns, DEFAULTS["columns"])
         self.assertEqual(config.rows, DEFAULTS["rows"])
         self.assertEqual(config.height, 700.0)
-        self.assertEqual(config.width, 700.0)
+        self.assertEqual(config.width, 1500.0)
         self.assertEqual(config.origin, DEFAULTS["origin"])
         self.assertEqual(config.color, "accent")
         self.assertEqual(config.opacity, DEFAULTS["opacity"])
@@ -96,8 +96,8 @@ class ConfigTests(unittest.TestCase):
     def test_height_falls_back_from_cap_height_to_upm_to_1000(self):
         upm_config = self.resolve(cap_height=0, upm=2048)[0]
         hard_config = self.resolve(cap_height=None, upm=None)[0]
-        self.assertEqual((upm_config.height, upm_config.width), (2048.0, 2048.0))
-        self.assertEqual((hard_config.height, hard_config.width), (1000.0, 1000.0))
+        self.assertEqual((upm_config.height, upm_config.width), (2048.0, 3072.0))
+        self.assertEqual((hard_config.height, hard_config.width), (1000.0, 1500.0))
 
     def test_padding_and_opacity_are_clamped(self):
         config, warnings = self.resolve(

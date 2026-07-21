@@ -12,7 +12,7 @@ value = 24;
 },
 {
 name = "IconGrid.width";
-value = 700;
+value = 1500;
 },
 {
 name = "IconGrid.origin";

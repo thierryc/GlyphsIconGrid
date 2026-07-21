@@ -20,7 +20,7 @@ Add parameters in **File → Font Info → Font → Custom Parameters**. Add a p
 ```text
 IconGrid.columns = 24
 IconGrid.rows = 24
-IconGrid.width = 700
+IconGrid.width = 1500
 IconGrid.origin = center
 IconGrid.padding = 2
 IconGrid.baselineOffset = 100
@@ -38,7 +38,7 @@ The grid follows three established icon-design ideas while remaining format-neut
 - Google’s Material 24-unit keyline uses a 20-unit circle, 18-unit square, 16×20 portrait rectangle, and 20×16 landscape rectangle. IconGrid scales those proportions to the configured live circle. See [Material system icon keylines](https://m2.material.io/design/iconography/system-icons.html#grid-and-keyline-shapes).
 - IBM Carbon recommends a consistent base grid and optical adjustments for visual balance. IconGrid deliberately leaves those optical decisions to the designer. See [Carbon icon design](https://carbondesignsystem.com/guidelines/icons/design/).
 
-`IconGrid.width` and `IconGrid.height` define one fixed construction canvas; changing a glyph's advance width only repositions that canvas at its left, center, or right anchor. Cells, rings, and keylines therefore remain consistent across narrow and wide icons without deformation.
+`IconGrid.width` defaults to 1.5 times the font UPM (1500 units in a 1000-UPM font) so the construction field can cover wide icons. Together with `IconGrid.height`, it defines one fixed construction canvas; changing a glyph's advance width only repositions that canvas at its left, center, or right anchor. Cells, rings, and keylines therefore remain consistent across narrow and wide icons without deformation.
 Circular guides are always true circles, centered on the transformed canvas even when its configured width and height differ.
 Set `IconGrid.baselineOffset` to a positive font-unit value when the construction canvas should extend below the font baseline; y=0 remains a highlighted grid axis.
 

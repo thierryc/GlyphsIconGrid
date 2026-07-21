@@ -7,7 +7,7 @@ Resolution is field-by-field: the active master’s valid `IconGrid.*` value win
 | `IconGrid.columns` | Integer 1–256 | `24` |
 | `IconGrid.rows` | Integer 1–256 | `24` |
 | `IconGrid.height` | Positive number | Active master cap height, then font UPM, then `1000` |
-| `IconGrid.width` | Positive number | Resolved `IconGrid.height` |
+| `IconGrid.width` | Positive number | `1.5 × font UPM` (or `1500`) |
 | `IconGrid.origin` | One of the nine names below | `bottom-left` |
 | `IconGrid.baselineOffset` | Finite number in font units; positive moves the canvas down | `0` |
 | `IconGrid.padding` | Non-negative grid-cell count | `2` |

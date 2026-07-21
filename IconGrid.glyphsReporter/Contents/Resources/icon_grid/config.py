@@ -229,6 +229,14 @@ def _fallback_height(cap_height, upm):
     return 1000.0
 
 
+def _fallback_width(upm):
+    for value in (upm, 1000):
+        ok, number, _note = _positive_number(value)
+        if ok:
+            return number * 1.5
+    return 1500.0
+
+
 def _choose(name, parser, master, font, fallback, warnings):
     key = PREFIX + name
     for label, source in (("master", master), ("font", font)):
@@ -258,7 +266,7 @@ def resolve_config(
     columns = _choose("columns", _integer_parser(1, MAX_DIVISIONS), master, font, DEFAULTS["columns"], warnings)
     rows = _choose("rows", _integer_parser(1, MAX_DIVISIONS), master, font, DEFAULTS["rows"], warnings)
     height = _choose("height", _positive_number, master, font, _fallback_height(master_cap_height, font_upm), warnings)
-    width = _choose("width", _positive_number, master, font, height, warnings)
+    width = _choose("width", _positive_number, master, font, _fallback_width(font_upm), warnings)
     origin = _choose("origin", _origin, master, font, DEFAULTS["origin"], warnings)
     baseline_offset = _choose(
         "baselineOffset", _number, master, font, DEFAULTS["baseline_offset"], warnings

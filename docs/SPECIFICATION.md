@@ -16,7 +16,7 @@ The first two layers import neither Glyphs nor AppKit. There are no mutable glob
 
 ## Geometry
 
-The canvas has configured fixed width and height. Its horizontal origin anchors the left edge at x=0, the center at half the active layer advance, or the right edge at the advance. Its vertical origin anchors the bottom, center, or top at y=0. The layer width therefore controls placement only: it never changes cell spacing, rings, or keyline proportions. A positive `baselineOffset` translates the complete canvas downward by that many font units, allowing part of the grid to sit below the font baseline.
+The canvas has configured fixed width and height. Width defaults to 1.5 times the font UPM, covering 1500 units in a 1000-UPM font. Its horizontal origin anchors the left edge at x=0, the center at half the active layer advance, or the right edge at the advance. Its vertical origin anchors the bottom, center, or top at y=0. The layer width therefore controls placement only: it never changes cell spacing, rings, or keyline proportions. A positive `baselineOffset` translates the complete canvas downward by that many font units, allowing part of the grid to sit below the font baseline.
 
 The rectangular grid uses `IconGrid.width / columns` and `IconGrid.height / rows` spacing. Cadence starts from the selected horizontal anchor and y=0. Glyph y=0 remains an axis line whenever it intersects the translated canvas; every `majorEvery`th line away from an anchor is major.
 
