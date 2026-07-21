@@ -40,7 +40,7 @@ Do not publish `0.1.0` until every automated and live item is checked. Never use
 
 | Item | Value |
 | --- | --- |
-| Test fixture commit | `eb4d294` |
+| Test fixture commit | `4b972d7` |
 | Glyphs 3 | 3.5 (3530), runtime pending |
 | Glyphs 4 | 4.0 (3875), runtime pending |
 | macOS | 26.6 (25G5065a) |
