@@ -1,0 +1,36 @@
+# Behavioral specification
+
+## Scope
+
+`GlyphsIconGrid` is a `ReporterPlugin` with one command: **View → Show Icon Grid**. It draws behind the active glyph and provides no dialog, context menu, palette, shortcut, or dependency on Vanilla. Drawing is suppressed for text and hand tools.
+
+The reporter is observational. It does not mutate glyphs, paths, components, selections, guides, snapping preferences, custom parameters, exports, or files.
+
+## Layering
+
+1. `icon_grid.config` converts plain parameter records into a validated `GridConfig`.
+2. `icon_grid.geometry` converts a width and `GridConfig` into bounded numeric primitives.
+3. `plugin.py` extracts plain data from Glyphs objects, batches primitives into `NSBezierPath` instances, and strokes them behind the glyph.
+
+The first two layers import neither Glyphs nor AppKit. There are no mutable global geometry caches.
+
+## Geometry
+
+The canvas has the active layer width and configured height. The chosen origin anchors the corresponding canvas point at glyph coordinate `(0, 0)`. The rectangular grid uses `width / columns` and `height / rows` spacing. The origin line is an axis line; every `majorEvery`th line away from it is major.
+
+The live-area inset is `padding` horizontal cells and `padding` vertical cells. Rings are concentric true circles with equal radial spacing up to the largest circle contained by the live area. Spokes share the ring center and are evenly spaced over 360°.
+
+Keylines scale Material’s 24-unit proportions to the live-circle diameter:
+
+- circle: 20/20 of the live diameter
+- square: 18/20 × 18/20
+- portrait: 16/20 × 20/20
+- landscape: 20/20 × 16/20
+
+Stroke widths are specified in screen pixels and divided by the current zoom scale.
+
+## Safety behavior
+
+The reporter is a no-op without a usable layer, glyph, font, active master, finite positive layer width, finite positive height, or supported drawing context. Values outside documented limits, malformed colors, non-finite numbers, and unknown origins fall through the master/font/default chain. Warnings are deduplicated by complete message for the reporter session.
+
+Glyphs 3 and Glyphs 4 are handled through their shared duck-typed layer/font/master/custom-parameter APIs. The adapter tests inject both shapes and assert identical core geometry.

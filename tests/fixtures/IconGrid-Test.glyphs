@@ -1,0 +1,117 @@
+{
+.appVersion = "3875";
+.formatVersion = 3;
+customParameters = (
+{
+name = "IconGrid.columns";
+value = 24;
+},
+{
+name = "IconGrid.rows";
+value = 24;
+},
+{
+name = "IconGrid.origin";
+value = "bottom-left";
+},
+{
+name = "IconGrid.padding";
+value = 2;
+}
+);
+familyName = "IconGrid Test Fixture";
+fontMaster = (
+{
+customParameters = (
+{
+name = "IconGrid.rings";
+value = 8;
+}
+);
+id = regular;
+metricValues = (
+{
+pos = 800;
+},
+{
+pos = 700;
+},
+{
+pos = 500;
+},
+{
+},
+{
+pos = -200;
+}
+);
+name = Regular;
+},
+{
+customParameters = (
+{
+name = "IconGrid.origin";
+value = center;
+},
+{
+name = "IconGrid.spokes";
+value = 12;
+}
+);
+id = bold;
+metricValues = (
+{
+pos = 820;
+},
+{
+pos = 720;
+},
+{
+pos = 520;
+},
+{
+},
+{
+pos = -200;
+}
+);
+name = Bold;
+}
+);
+glyphs = (
+{
+glyphname = icon;
+layers = (
+{
+layerId = regular;
+width = 1000;
+},
+{
+layerId = bold;
+width = 800;
+}
+);
+unicode = E000;
+}
+);
+metrics = (
+{
+type = ascender;
+},
+{
+type = "cap height";
+},
+{
+type = "x-height";
+},
+{
+type = baseline;
+},
+{
+type = descender;
+}
+);
+unitsPerEm = 1000;
+versionMajor = 1;
+versionMinor = 0;
+}

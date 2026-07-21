@@ -1,0 +1,18 @@
+GlyphsIconGrid
+Copyright 2026 Thierry Charbonnel
+
+This product includes the unmodified universal plug-in wrapper from the
+GlyphsSDK Reporter template, revision 0f5422db727b78cb42abfb386f33ae0b382b0c4d:
+https://github.com/schriftgestalt/GlyphsSDK
+
+The wrapper SHA-256 is:
+165af5653635741bbf6698476aff5f868618a8040bc76d8abb7076f7115e91fa
+
+GlyphsSDK is distributed under the Apache License, Version 2.0. A copy is
+included in LICENSE.
+
+Jens Kutilek's MasterGrid reporter was reviewed and is acknowledged as prior
+inspiration: https://github.com/jenskutilek/MasterGrid
+No MasterGrid source code, configuration model, or rendering implementation is
+included. IconGrid's configuration, geometry, rendering, and tests were
+independently written as a clean-room implementation.
