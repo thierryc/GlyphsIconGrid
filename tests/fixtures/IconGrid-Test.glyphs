@@ -11,6 +11,10 @@ name = "IconGrid.rows";
 value = 24;
 },
 {
+name = "IconGrid.width";
+value = 700;
+},
+{
 name = "IconGrid.origin";
 value = "bottom-left";
 },

@@ -7,6 +7,7 @@ Resolution is field-by-field: the active master’s valid `IconGrid.*` value win
 | `IconGrid.columns` | Integer 1–256 | `24` |
 | `IconGrid.rows` | Integer 1–256 | `24` |
 | `IconGrid.height` | Positive number | Active master cap height, then font UPM, then `1000` |
+| `IconGrid.width` | Positive number | Resolved `IconGrid.height` |
 | `IconGrid.origin` | One of the nine names below | `bottom-left` |
 | `IconGrid.baselineOffset` | Finite number in font units; positive moves the canvas down | `0` |
 | `IconGrid.padding` | Non-negative grid-cell count | `2` |
@@ -19,6 +20,8 @@ Resolution is field-by-field: the active master’s valid `IconGrid.*` value win
 
 Supported origins are `bottom-left`, `bottom-center`, `bottom-right`, `center-left`, `center`, `center-right`, `top-left`, `top-center`, and `top-right`.
 
-The named origin initially places glyph coordinate `(0, 0)` at that point of a canvas whose width is the active layer width and whose height is `IconGrid.height`. `IconGrid.baselineOffset` then translates the canvas downward, making the font baseline an internal construction axis when the value is positive. Grid cadence is measured outwards from `(0, 0)`, not from the canvas minimum. Circular guides remain centered on the translated canvas.
+`IconGrid.width` and `IconGrid.height` define a fixed construction canvas. The horizontal part of the origin aligns the canvas to the active layer's advance: `left` puts its left edge at x=0, `center` puts its center at half the advance, and `right` puts its right edge at the advance. The grid is never stretched to match the advance. The vertical part anchors the bottom, center, or top at y=0. `IconGrid.baselineOffset` then translates the canvas downward, making the font baseline an internal construction axis when the value is positive.
+
+Grid cadence is measured outwards from the chosen horizontal anchor and from y=0, not from the canvas minimum. Circular guides remain centered on the translated fixed canvas.
 
 `IconGrid.padding` is measured separately in x and y cells. It is clamped before the live area can collapse. Geometry counts are bounded to keep redraw work predictable.

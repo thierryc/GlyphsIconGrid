@@ -86,15 +86,22 @@ def _finite_positive(value):
     return number
 
 
-def canvas_for_origin(width, height, origin):
+def _origin_parts(origin):
+    if origin == "center":
+        return "center", "center"
+    return origin.split("-", 1)
+
+
+def canvas_for_origin(width, height, origin, anchor_width=None):
+    """Place a fixed canvas against an advance-width horizontal anchor."""
     width = float(width)
     height = float(height)
-    vertical, horizontal = origin.split("-", 1) if "-" in origin else (origin, origin)
-    if origin == "center":
-        vertical = horizontal = "center"
+    anchor_width = width if anchor_width is None else float(anchor_width)
+    vertical, horizontal = _origin_parts(origin)
     horizontal_factor = {"left": 0.0, "center": 0.5, "right": 1.0}[horizontal]
     vertical_factor = {"bottom": 0.0, "center": 0.5, "top": 1.0}[vertical]
-    xmin = -horizontal_factor * width
+    horizontal_anchor = horizontal_factor * anchor_width
+    xmin = horizontal_anchor - horizontal_factor * width
     ymin = -vertical_factor * height
     return Canvas(xmin, ymin, xmin + width, ymin + height)
 
@@ -103,14 +110,14 @@ def _near(a, b):
     return abs(a - b) <= _EPSILON
 
 
-def _grid_positions(start, end, step, major_every):
-    minimum_index = int(math.ceil((start - _EPSILON) / step))
-    maximum_index = int(math.floor((end + _EPSILON) / step))
+def _grid_positions(start, end, step, major_every, anchor=0.0):
+    minimum_index = int(math.ceil((start - anchor - _EPSILON) / step))
+    maximum_index = int(math.floor((end - anchor + _EPSILON) / step))
     minor = []
     major = []
     axes = []
     for index in range(minimum_index, maximum_index + 1):
-        position = index * step
+        position = anchor + index * step
         is_axis = index == 0
         is_boundary = _near(position, start) or _near(position, end)
         if is_boundary and not is_axis:
@@ -129,12 +136,18 @@ def _rect_keyline(name, cx, cy, width, height):
 
 
 def build_geometry(width, config):
-    width = _finite_positive(width)
+    layer_width = _finite_positive(width)
     height = _finite_positive(getattr(config, "height", None))
-    if width is None or height is None:
+    grid_width = _finite_positive(getattr(config, "width", height))
+    if layer_width is None or height is None or grid_width is None:
         return None
 
-    canvas = canvas_for_origin(width, height, config.origin)
+    _vertical_origin, horizontal_origin = _origin_parts(config.origin)
+    horizontal_factor = {"left": 0.0, "center": 0.5, "right": 1.0}[horizontal_origin]
+    horizontal_anchor = horizontal_factor * layer_width
+    canvas = canvas_for_origin(
+        grid_width, height, config.origin, anchor_width=layer_width
+    )
     baseline_offset = float(getattr(config, "baseline_offset", 0.0))
     canvas = Canvas(
         canvas.xmin,
@@ -142,11 +155,11 @@ def build_geometry(width, config):
         canvas.xmax,
         canvas.ymax - baseline_offset,
     )
-    step_x = width / float(config.columns)
+    step_x = grid_width / float(config.columns)
     step_y = height / float(config.rows)
 
     vertical_minor_x, vertical_major_x, vertical_axis_x = _grid_positions(
-        canvas.xmin, canvas.xmax, step_x, config.major_every
+        canvas.xmin, canvas.xmax, step_x, config.major_every, horizontal_anchor
     )
     horizontal_minor_y, horizontal_major_y, horizontal_axis_y = _grid_positions(
         canvas.ymin, canvas.ymax, step_y, config.major_every
@@ -158,7 +171,7 @@ def build_geometry(width, config):
     horizontal_major = [Line(canvas.xmin, y, canvas.xmax, y) for y in horizontal_major_y]
     horizontal_axes = [Line(canvas.xmin, y, canvas.xmax, y) for y in horizontal_axis_y]
 
-    inset_x = min(config.padding * step_x, width / 2.0)
+    inset_x = min(config.padding * step_x, grid_width / 2.0)
     inset_y = min(config.padding * step_y, height / 2.0)
     live_area = Canvas(
         canvas.xmin + inset_x,

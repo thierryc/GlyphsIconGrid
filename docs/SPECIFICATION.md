@@ -16,7 +16,9 @@ The first two layers import neither Glyphs nor AppKit. There are no mutable glob
 
 ## Geometry
 
-The canvas has the active layer width and configured height. The chosen origin first anchors the corresponding canvas point at glyph coordinate `(0, 0)`. A positive `baselineOffset` then translates the complete canvas downward by that many font units, allowing part of the grid to sit below the font baseline. The rectangular grid uses `width / columns` and `height / rows` spacing. Glyph y=0 remains an axis line whenever it intersects the translated canvas; every `majorEvery`th line away from it is major.
+The canvas has configured fixed width and height. Its horizontal origin anchors the left edge at x=0, the center at half the active layer advance, or the right edge at the advance. Its vertical origin anchors the bottom, center, or top at y=0. The layer width therefore controls placement only: it never changes cell spacing, rings, or keyline proportions. A positive `baselineOffset` translates the complete canvas downward by that many font units, allowing part of the grid to sit below the font baseline.
+
+The rectangular grid uses `IconGrid.width / columns` and `IconGrid.height / rows` spacing. Cadence starts from the selected horizontal anchor and y=0. Glyph y=0 remains an axis line whenever it intersects the translated canvas; every `majorEvery`th line away from an anchor is major.
 
 The live-area inset is `padding` horizontal cells and `padding` vertical cells. Rings are concentric true circles with equal radial spacing up to the largest circle contained by the live area. Spokes share the ring center and are evenly spaced over 360°.
 
@@ -31,6 +33,6 @@ Stroke widths are specified in screen pixels and divided by the current zoom sca
 
 ## Safety behavior
 
-The reporter is a no-op without a usable layer, glyph, font, active master, finite positive layer width, finite positive height, or supported drawing context. Values outside documented limits, malformed colors, non-finite numbers, and unknown origins fall through the master/font/default chain. Warnings are deduplicated by complete message for the reporter session.
+The reporter is a no-op without a usable layer, glyph, font, active master, finite positive layer width, finite positive configured width and height, or supported drawing context. Values outside documented limits, malformed colors, non-finite numbers, and unknown origins fall through the master/font/default chain. Warnings are deduplicated by complete message for the reporter session.
 
 Glyphs 3 and Glyphs 4 are handled through their shared duck-typed layer/font/master/custom-parameter APIs. The adapter tests inject both shapes and assert identical core geometry.

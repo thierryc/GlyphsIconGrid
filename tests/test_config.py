@@ -21,6 +21,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.columns, 24)
         self.assertEqual(config.rows, 24)
         self.assertEqual(config.height, 700.0)
+        self.assertEqual(config.width, 700.0)
         self.assertEqual(config.origin, "bottom-left")
         self.assertEqual(config.baseline_offset, 0.0)
         self.assertEqual(config.padding, 2.0)
@@ -47,6 +48,7 @@ class ConfigTests(unittest.TestCase):
             font={
                 "IconGrid.columns": 32,
                 "IconGrid.rows": 20,
+                "IconGrid.width": 840,
                 "IconGrid.origin": "top-right",
                 "IconGrid.opacity": 0.4,
                 "IconGrid.baselineOffset": 80,
@@ -54,6 +56,7 @@ class ConfigTests(unittest.TestCase):
             master={"IconGrid.rows": 16, "IconGrid.baselineOffset": 100},
         )
         self.assertEqual((config.columns, config.rows), (32, 16))
+        self.assertEqual(config.width, 840.0)
         self.assertEqual(config.origin, "top-right")
         self.assertEqual(config.opacity, 0.4)
         self.assertEqual(config.baseline_offset, 100.0)
@@ -73,6 +76,7 @@ class ConfigTests(unittest.TestCase):
                 "IconGrid.columns": 0,
                 "IconGrid.rows": 257,
                 "IconGrid.height": float("nan"),
+                "IconGrid.width": float("inf"),
                 "IconGrid.origin": "middle-ish",
                 "IconGrid.color": "blue",
                 "IconGrid.opacity": float("inf"),
@@ -82,15 +86,18 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.columns, DEFAULTS["columns"])
         self.assertEqual(config.rows, DEFAULTS["rows"])
         self.assertEqual(config.height, 700.0)
+        self.assertEqual(config.width, 700.0)
         self.assertEqual(config.origin, DEFAULTS["origin"])
         self.assertEqual(config.color, "accent")
         self.assertEqual(config.opacity, DEFAULTS["opacity"])
         self.assertEqual(config.baseline_offset, 0.0)
-        self.assertGreaterEqual(len(warnings), 7)
+        self.assertGreaterEqual(len(warnings), 8)
 
     def test_height_falls_back_from_cap_height_to_upm_to_1000(self):
-        self.assertEqual(self.resolve(cap_height=0, upm=2048)[0].height, 2048.0)
-        self.assertEqual(self.resolve(cap_height=None, upm=None)[0].height, 1000.0)
+        upm_config = self.resolve(cap_height=0, upm=2048)[0]
+        hard_config = self.resolve(cap_height=None, upm=None)[0]
+        self.assertEqual((upm_config.height, upm_config.width), (2048.0, 2048.0))
+        self.assertEqual((hard_config.height, hard_config.width), (1000.0, 1000.0))
 
     def test_padding_and_opacity_are_clamped(self):
         config, warnings = self.resolve(
@@ -110,6 +117,7 @@ class ConfigTests(unittest.TestCase):
             font={
                 "IconGrid.columns": "32",
                 "IconGrid.height": "900.5",
+                "IconGrid.width": "1200",
                 "IconGrid.showKeylines": "off",
                 "IconGrid.color": "#3366CC",
                 "IconGrid.rings": "0",
@@ -118,6 +126,7 @@ class ConfigTests(unittest.TestCase):
         )
         self.assertEqual(config.columns, 32)
         self.assertEqual(config.height, 900.5)
+        self.assertEqual(config.width, 1200.0)
         self.assertFalse(config.show_keylines)
         self.assertEqual(config.color, (0.2, 0.4, 0.8))
         self.assertEqual(config.rings, 0)
@@ -165,6 +174,7 @@ class ConfigTests(unittest.TestCase):
                     "IconGrid.columns": value,
                     "IconGrid.rows": value,
                     "IconGrid.height": value,
+                    "IconGrid.width": value,
                     "IconGrid.padding": value,
                     "IconGrid.rings": value,
                     "IconGrid.spokes": value,
@@ -174,6 +184,7 @@ class ConfigTests(unittest.TestCase):
             self.assertGreater(config.columns, 0)
             self.assertGreater(config.rows, 0)
             self.assertTrue(math.isfinite(config.height))
+            self.assertTrue(math.isfinite(config.width))
             self.assertTrue(math.isfinite(config.padding))
             self.assertTrue(math.isfinite(config.opacity))
 

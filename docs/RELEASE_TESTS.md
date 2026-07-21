@@ -19,7 +19,7 @@ Do not publish `0.1.0` until every automated and live item is checked. Never use
 - [ ] Record Python runtime and macOS version
 - [ ] Install disposable plug-in copy and open `tests/fixtures/IconGrid-Test.glyphs`
 - [ ] Reporter appears only as **View → Show Icon Grid**
-- [ ] Show/hide, all origins, both masters, widths, zooms, light/dark appearance
+- [ ] Show/hide, all origins, both masters, fixed grid across glyph widths, zooms, light/dark appearance
 - [ ] Glyphs MCP parameter edit redraws immediately
 - [ ] Explicit save/reopen preserves parameters
 - [ ] No Macro Panel exception, outline/snapping change, or implicit save
@@ -30,7 +30,7 @@ Do not publish `0.1.0` until every automated and live item is checked. Never use
 - [ ] Record Python runtime and macOS version
 - [ ] Install disposable plug-in copy and open `tests/fixtures/IconGrid-Test.glyphs`
 - [ ] Reporter appears only as **View → Show Icon Grid**
-- [ ] Show/hide, all origins, both masters, widths, zooms, light/dark appearance
+- [ ] Show/hide, all origins, both masters, fixed grid across glyph widths, zooms, light/dark appearance
 - [ ] Glyphs MCP parameter edit redraws immediately
 - [ ] Explicit save/reopen preserves parameters
 - [ ] No Macro Panel exception, outline/snapping change, or implicit save

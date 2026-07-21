@@ -21,22 +21,34 @@ class GeometryTests(unittest.TestCase):
 
     def test_all_origins_have_exact_bounds(self):
         expected = {
-            "bottom-left": (0, 0, 1000, 800),
-            "bottom-center": (-500, 0, 500, 800),
-            "bottom-right": (-1000, 0, 0, 800),
-            "center-left": (0, -400, 1000, 400),
-            "center": (-500, -400, 500, 400),
-            "center-right": (-1000, -400, 0, 400),
-            "top-left": (0, -800, 1000, 0),
-            "top-center": (-500, -800, 500, 0),
-            "top-right": (-1000, -800, 0, 0),
+            "bottom-left": (0, 0, 800, 600),
+            "bottom-center": (100, 0, 900, 600),
+            "bottom-right": (200, 0, 1000, 600),
+            "center-left": (0, -300, 800, 300),
+            "center": (100, -300, 900, 300),
+            "center-right": (200, -300, 1000, 300),
+            "top-left": (0, -600, 800, 0),
+            "top-center": (100, -600, 900, 0),
+            "top-right": (200, -600, 1000, 0),
         }
         for origin, bounds in expected.items():
-            canvas = canvas_for_origin(1000, 800, origin)
+            canvas = canvas_for_origin(800, 600, origin, anchor_width=1000)
             self.assertEqual(canvas.as_tuple(), bounds, origin)
 
+    def test_fixed_grid_does_not_stretch_with_glyph_advance(self):
+        config = self.config(width=800, height=800, origin="bottom-center")
+        narrow = build_geometry(800, config)
+        wide = build_geometry(1200, config)
+        self.assertEqual(narrow.canvas.as_tuple(), (0.0, 0.0, 800.0, 800.0))
+        self.assertEqual(wide.canvas.as_tuple(), (200.0, 0.0, 1000.0, 800.0))
+        self.assertEqual(narrow.canvas.width, wide.canvas.width)
+        self.assertEqual(narrow.canvas.height, wide.canvas.height)
+        self.assertEqual(narrow.live_radius, wide.live_radius)
+
     def test_grid_cadence_starts_at_origin(self):
-        geometry = build_geometry(1000, self.config(columns=10, rows=8, majorEvery=2))
+        geometry = build_geometry(
+            1000, self.config(width=1000, columns=10, rows=8, majorEvery=2)
+        )
         major_x = sorted(
             line.x1 for line in geometry.major_lines if line.x1 == line.x2
         )
@@ -45,7 +57,7 @@ class GeometryTests(unittest.TestCase):
 
     def test_every_grid_line_is_axis_aligned_and_spans_the_canvas(self):
         geometry = build_geometry(
-            900, self.config(columns=9, rows=7, height=700, origin="top-right")
+            900, self.config(width=900, columns=9, rows=7, height=700, origin="top-right")
         )
         for line in geometry.all_grid_lines():
             if line.x1 == line.x2:
@@ -58,7 +70,13 @@ class GeometryTests(unittest.TestCase):
     def test_baseline_offset_moves_canvas_below_zero_and_keeps_baseline_axis(self):
         geometry = build_geometry(
             1000,
-            self.config(height=800, rows=8, origin="bottom-left", baselineOffset=200),
+            self.config(
+                width=1000,
+                height=800,
+                rows=8,
+                origin="bottom-left",
+                baselineOffset=200,
+            ),
         )
         self.assertEqual(geometry.canvas.as_tuple(), (0.0, -200.0, 1000.0, 600.0))
         self.assertEqual(geometry.center, (500.0, 200.0))
@@ -68,31 +86,31 @@ class GeometryTests(unittest.TestCase):
 
     def test_centered_odd_grid_has_symmetric_half_cell_gutters(self):
         geometry = build_geometry(
-            900, self.config(columns=9, rows=7, height=700, origin="center")
+            900, self.config(width=900, columns=9, rows=7, height=700, origin="center")
         )
         verticals = sorted(
             line.x1 for line in geometry.all_grid_lines() if line.x1 == line.x2
         )
-        self.assertEqual(verticals[0], -400.0)
-        self.assertEqual(verticals[-1], 400.0)
-        self.assertEqual(geometry.canvas.as_tuple(), (-450.0, -350.0, 450.0, 350.0))
+        self.assertEqual(verticals[0], 50.0)
+        self.assertEqual(verticals[-1], 850.0)
+        self.assertEqual(geometry.canvas.as_tuple(), (0.0, -350.0, 900.0, 350.0))
 
     def test_live_area_padding_is_in_grid_cells(self):
         geometry = build_geometry(
-            1200, self.config(columns=24, rows=12, height=600, padding=2)
+            1200, self.config(width=1200, columns=24, rows=12, height=600, padding=2)
         )
         self.assertEqual(geometry.live_area.as_tuple(), (100.0, 100.0, 1100.0, 500.0))
 
     def test_rings_are_true_circles_centered_in_rectangular_canvas(self):
         geometry = build_geometry(
-            1200, self.config(height=800, rings=4, origin="top-right")
+            1200, self.config(width=1200, height=800, rings=4, origin="top-right")
         )
-        self.assertEqual(geometry.center, (-600.0, -400.0))
+        self.assertEqual(geometry.center, (600.0, -400.0))
         expected_step = (800.0 - 2 * (2 * 800.0 / 24.0)) / 2.0 / 4.0
         for circle, expected_radius in zip(geometry.rings, [expected_step * i for i in range(1, 5)]):
             self.assertAlmostEqual(circle.radius, expected_radius)
         for circle in geometry.rings:
-            self.assertEqual(circle.cx, -600.0)
+            self.assertEqual(circle.cx, 600.0)
             self.assertEqual(circle.cy, -400.0)
 
     def test_spokes_are_evenly_spaced_on_outer_live_circle(self):
