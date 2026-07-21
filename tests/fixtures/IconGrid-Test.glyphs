@@ -1,5 +1,5 @@
 {
-.appVersion = "3875";
+.appVersion = "3530";
 .formatVersion = 3;
 customParameters = (
 {
@@ -17,6 +17,10 @@ value = "bottom-left";
 {
 name = "IconGrid.padding";
 value = 2;
+},
+{
+name = "IconGrid.baselineOffset";
+value = 100;
 }
 );
 familyName = "IconGrid Test Fixture";

@@ -16,7 +16,7 @@ The first two layers import neither Glyphs nor AppKit. There are no mutable glob
 
 ## Geometry
 
-The canvas has the active layer width and configured height. The chosen origin anchors the corresponding canvas point at glyph coordinate `(0, 0)`. The rectangular grid uses `width / columns` and `height / rows` spacing. The origin line is an axis line; every `majorEvery`th line away from it is major.
+The canvas has the active layer width and configured height. The chosen origin first anchors the corresponding canvas point at glyph coordinate `(0, 0)`. A positive `baselineOffset` then translates the complete canvas downward by that many font units, allowing part of the grid to sit below the font baseline. The rectangular grid uses `width / columns` and `height / rows` spacing. Glyph y=0 remains an axis line whenever it intersects the translated canvas; every `majorEvery`th line away from it is major.
 
 The live-area inset is `padding` horizontal cells and `padding` vertical cells. Rings are concentric true circles with equal radial spacing up to the largest circle contained by the live area. Spokes share the ring center and are evenly spaced over 360°.
 

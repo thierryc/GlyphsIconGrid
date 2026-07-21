@@ -135,6 +135,13 @@ def build_geometry(width, config):
         return None
 
     canvas = canvas_for_origin(width, height, config.origin)
+    baseline_offset = float(getattr(config, "baseline_offset", 0.0))
+    canvas = Canvas(
+        canvas.xmin,
+        canvas.ymin - baseline_offset,
+        canvas.xmax,
+        canvas.ymax - baseline_offset,
+    )
     step_x = width / float(config.columns)
     step_y = height / float(config.rows)
 

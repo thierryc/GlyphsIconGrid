@@ -22,6 +22,7 @@ IconGrid.columns = 24
 IconGrid.rows = 24
 IconGrid.origin = center
 IconGrid.padding = 2
+IconGrid.baselineOffset = 100
 IconGrid.rings = 10
 IconGrid.spokes = 8
 ```
@@ -37,6 +38,7 @@ The grid follows three established icon-design ideas while remaining format-neut
 - IBM Carbon recommends a consistent base grid and optical adjustments for visual balance. IconGrid deliberately leaves those optical decisions to the designer. See [Carbon icon design](https://carbondesignsystem.com/guidelines/icons/design/).
 
 Circular guides are always true circles, centered on the transformed canvas even when the glyph width and configured height differ.
+Set `IconGrid.baselineOffset` to a positive font-unit value when the construction canvas should extend below the font baseline; y=0 remains a highlighted grid axis.
 
 ## Develop and test
 

@@ -23,6 +23,7 @@ DEFAULTS = {
     "columns": 24,
     "rows": 24,
     "origin": "bottom-left",
+    "baseline_offset": 0.0,
     "padding": 2.0,
     "major_every": 4,
     "spokes": 8,
@@ -44,6 +45,7 @@ class GridConfig(object):
         "rows",
         "height",
         "origin",
+        "baseline_offset",
         "padding",
         "major_every",
         "rings",
@@ -59,6 +61,7 @@ class GridConfig(object):
         rows,
         height,
         origin,
+        baseline_offset,
         padding,
         major_every,
         rings,
@@ -71,6 +74,7 @@ class GridConfig(object):
         self.rows = rows
         self.height = height
         self.origin = origin
+        self.baseline_offset = baseline_offset
         self.padding = padding
         self.major_every = major_every
         self.rings = rings
@@ -149,6 +153,13 @@ def _integer_parser(minimum, maximum):
 def _positive_number(value):
     number = _finite_number(value)
     if number is None or number <= 0:
+        return False, None, None
+    return True, number, None
+
+
+def _number(value):
+    number = _finite_number(value)
+    if number is None:
         return False, None, None
     return True, number, None
 
@@ -245,6 +256,9 @@ def resolve_config(
     rows = _choose("rows", _integer_parser(1, MAX_DIVISIONS), master, font, DEFAULTS["rows"], warnings)
     height = _choose("height", _positive_number, master, font, _fallback_height(master_cap_height, font_upm), warnings)
     origin = _choose("origin", _origin, master, font, DEFAULTS["origin"], warnings)
+    baseline_offset = _choose(
+        "baselineOffset", _number, master, font, DEFAULTS["baseline_offset"], warnings
+    )
     padding = _choose("padding", _nonnegative_number, master, font, DEFAULTS["padding"], warnings)
     major_every = _choose("majorEvery", _integer_parser(0, MAX_DIVISIONS), master, font, DEFAULTS["major_every"], warnings)
     spokes = _choose("spokes", _integer_parser(0, MAX_SPOKES), master, font, DEFAULTS["spokes"], warnings)
@@ -267,6 +281,7 @@ def resolve_config(
         rows=rows,
         height=height,
         origin=origin,
+        baseline_offset=baseline_offset,
         padding=padding,
         major_every=major_every,
         rings=rings,

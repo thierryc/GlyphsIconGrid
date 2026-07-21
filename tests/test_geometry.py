@@ -6,6 +6,7 @@ import unittest
 from tests import support  # noqa: F401
 from icon_grid.config import resolve_config
 from icon_grid.geometry import (
+    Line,
     build_geometry,
     canvas_for_origin,
     line_width_for_scale,
@@ -53,6 +54,17 @@ class GeometryTests(unittest.TestCase):
                 self.assertEqual((line.x1, line.x2), (geometry.canvas.xmin, geometry.canvas.xmax))
             else:
                 self.fail("Grid line is diagonal: {!r}".format(line))
+
+    def test_baseline_offset_moves_canvas_below_zero_and_keeps_baseline_axis(self):
+        geometry = build_geometry(
+            1000,
+            self.config(height=800, rows=8, origin="bottom-left", baselineOffset=200),
+        )
+        self.assertEqual(geometry.canvas.as_tuple(), (0.0, -200.0, 1000.0, 600.0))
+        self.assertEqual(geometry.center, (500.0, 200.0))
+        horizontal_axes = [line for line in geometry.axis_lines if line.y1 == line.y2]
+        self.assertEqual(horizontal_axes, [Line(0.0, 0.0, 1000.0, 0.0)])
+        self.assertTrue(all(circle.cy == 200.0 for circle in geometry.rings))
 
     def test_centered_odd_grid_has_symmetric_half_cell_gutters(self):
         geometry = build_geometry(

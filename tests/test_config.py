@@ -22,6 +22,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.rows, 24)
         self.assertEqual(config.height, 700.0)
         self.assertEqual(config.origin, "bottom-left")
+        self.assertEqual(config.baseline_offset, 0.0)
         self.assertEqual(config.padding, 2.0)
         self.assertEqual(config.major_every, 4)
         self.assertEqual(config.rings, 10)
@@ -48,12 +49,14 @@ class ConfigTests(unittest.TestCase):
                 "IconGrid.rows": 20,
                 "IconGrid.origin": "top-right",
                 "IconGrid.opacity": 0.4,
+                "IconGrid.baselineOffset": 80,
             },
-            master={"IconGrid.rows": 16},
+            master={"IconGrid.rows": 16, "IconGrid.baselineOffset": 100},
         )
         self.assertEqual((config.columns, config.rows), (32, 16))
         self.assertEqual(config.origin, "top-right")
         self.assertEqual(config.opacity, 0.4)
+        self.assertEqual(config.baseline_offset, 100.0)
         self.assertEqual(warnings, [])
 
     def test_invalid_master_value_falls_back_to_valid_font_value(self):
@@ -73,6 +76,7 @@ class ConfigTests(unittest.TestCase):
                 "IconGrid.origin": "middle-ish",
                 "IconGrid.color": "blue",
                 "IconGrid.opacity": float("inf"),
+                "IconGrid.baselineOffset": float("nan"),
             }
         )
         self.assertEqual(config.columns, DEFAULTS["columns"])
@@ -81,7 +85,8 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.origin, DEFAULTS["origin"])
         self.assertEqual(config.color, "accent")
         self.assertEqual(config.opacity, DEFAULTS["opacity"])
-        self.assertGreaterEqual(len(warnings), 6)
+        self.assertEqual(config.baseline_offset, 0.0)
+        self.assertGreaterEqual(len(warnings), 7)
 
     def test_height_falls_back_from_cap_height_to_upm_to_1000(self):
         self.assertEqual(self.resolve(cap_height=0, upm=2048)[0].height, 2048.0)
