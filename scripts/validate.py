@@ -92,6 +92,10 @@ def validate(bundle, target):
         checks.extend(["python-syntax", "principal-class"])
     else:
         errors.append("principal class {} not found".format(EXPECTED_CLASS))
+    if os.access(plugin_path, os.X_OK):
+        checks.append("executable-python-entry-point")
+    else:
+        errors.append("Python plug-in entry point is not executable")
 
     try:
         with open(loader, "rb") as handle:

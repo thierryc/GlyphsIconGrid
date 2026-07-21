@@ -51,6 +51,10 @@ class BundleTests(unittest.TestCase):
             magic = handle.read(4)
         self.assertIn(struct.unpack(">I", magic)[0], (0xCAFEBABE, 0xCAFEBABF))
 
+    def test_python_entry_point_keeps_official_template_executable_mode(self):
+        plugin_source = os.path.join(RESOURCES, "plugin.py")
+        self.assertTrue(os.access(plugin_source, os.X_OK))
+
     def test_disposable_fixture_has_two_masters_and_two_widths(self):
         fixture = os.path.join(ROOT, "tests", "fixtures", "IconGrid-Test.glyphs")
         with open(fixture, "r", encoding="utf-8") as handle:
