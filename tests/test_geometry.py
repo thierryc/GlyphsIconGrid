@@ -6,9 +6,11 @@ import unittest
 from tests import support  # noqa: F401
 from icon_grid.config import resolve_config
 from icon_grid.geometry import (
+    GuideRef,
     Line,
     build_geometry,
     canvas_for_origin,
+    hit_test_guides,
     line_width_for_scale,
     snapshot,
 )
@@ -147,6 +149,115 @@ class GeometryTests(unittest.TestCase):
         self.assertAlmostEqual(line_width_for_scale(1.0, 2.0), 0.5)
         self.assertAlmostEqual(line_width_for_scale(1.0, 0.25), 4.0)
         self.assertTrue(math.isfinite(line_width_for_scale(1.0, 0)))
+
+    def test_hit_testing_includes_every_visible_guide_kind(self):
+        geometry = build_geometry(
+            1000,
+            self.config(
+                width=1000,
+                height=1000,
+                columns=10,
+                rows=10,
+                majorEvery=2,
+                padding=1,
+                rings=4,
+                spokes=8,
+                showKeylines=True,
+            ),
+        )
+        probes = {
+            "minor": (100.0, 750.0),
+            "major": (200.0, 750.0),
+            "axis": (0.0, 750.0),
+            "frame": (500.0, 1000.0),
+            "ring": (900.0, 500.0),
+            "spoke": (750.0, 500.0),
+            "keyline": (500.0, 860.0),
+        }
+        for kind, point in probes.items():
+            hits = hit_test_guides(geometry, point, 0.001)
+            self.assertTrue(any(hit.kind == kind for hit in hits), (kind, hits))
+
+    def test_hit_testing_highlights_all_crossing_guides(self):
+        geometry = build_geometry(
+            1000,
+            self.config(
+                width=1000,
+                height=1000,
+                columns=10,
+                rows=10,
+                majorEvery=2,
+                padding=1,
+                rings=0,
+                spokes=0,
+                showKeylines=False,
+            ),
+        )
+        hits = hit_test_guides(geometry, (200.0, 200.0), 0.001)
+        major_hits = [hit for hit in hits if hit.kind == "major"]
+        self.assertEqual(len(major_hits), 2)
+
+    def test_hit_testing_deduplicates_coincident_ring_and_keyline_circle(self):
+        geometry = build_geometry(
+            1000,
+            self.config(
+                width=1000,
+                height=1000,
+                columns=10,
+                rows=10,
+                padding=1,
+                rings=4,
+                spokes=0,
+                showKeylines=True,
+            ),
+        )
+        hits = hit_test_guides(geometry, (900.0, 500.0), 0.001)
+        self.assertIn(GuideRef("ring", 3), hits)
+        self.assertNotIn(GuideRef("keyline", 0), hits)
+
+    def test_hit_testing_uses_bounded_segments_and_rect_perimeters(self):
+        geometry = build_geometry(
+            1000,
+            self.config(
+                width=1000,
+                height=1000,
+                columns=1,
+                rows=1,
+                padding=0,
+                rings=0,
+                spokes=1,
+                showKeylines=False,
+            ),
+        )
+        self.assertEqual(hit_test_guides(geometry, (1100.0, 500.0), 5.0), ())
+        frame_hits = hit_test_guides(geometry, (1002.0, 1002.0), 3.0)
+        self.assertIn(GuideRef("frame", 0), frame_hits)
+        self.assertEqual(hit_test_guides(geometry, (1004.0, 1004.0), 3.0), ())
+
+    def test_hit_tolerance_can_be_converted_from_constant_screen_points(self):
+        geometry = build_geometry(
+            1000,
+            self.config(
+                width=1000,
+                height=1000,
+                columns=10,
+                rows=10,
+                rings=0,
+                spokes=0,
+                showKeylines=False,
+            ),
+        )
+        point = (104.0, 750.0)
+        self.assertIn(GuideRef("minor", 0), hit_test_guides(geometry, point, 5.0 / 1.0))
+        self.assertNotIn(GuideRef("minor", 0), hit_test_guides(geometry, point, 5.0 / 2.0))
+
+    def test_hit_testing_rejects_invalid_inputs(self):
+        geometry = build_geometry(1000, self.config())
+        self.assertEqual(hit_test_guides(None, (0, 0), 5), ())
+        self.assertEqual(hit_test_guides(geometry, None, 5), ())
+        self.assertEqual(hit_test_guides(geometry, (math.nan, 0), 5), ())
+        self.assertEqual(hit_test_guides(geometry, (0, 0), -1), ())
+        self.assertEqual(hit_test_guides(geometry, (0, 0), math.inf), ())
 
     def test_snapshot_is_deterministic(self):
         geometry = build_geometry(

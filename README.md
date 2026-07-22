@@ -1,6 +1,6 @@
 # GlyphsIconGrid
 
-GlyphsIconGrid is a no-dialog reporter plug-in for drawing an icon construction grid behind the active glyph in Glyphs 3 and Glyphs 4. It provides an origin-aware rectangular grid, a padded live area, concentric circular guides, radial spokes, and Material-derived circle/square/portrait/landscape keylines. The plug-in never changes outlines, snapping, export behavior, or the saved document on its own.
+GlyphsIconGrid is a no-dialog reporter plug-in for drawing an icon construction grid behind the active glyph in Glyphs 3 and Glyphs 4. It provides an origin-aware rectangular grid, a padded live area, concentric circular guides, radial spokes, and Material-derived circle/square/portrait/landscape keylines. Move the pointer close to a visible guide to highlight the complete construction line without changing the glyph. The plug-in never changes outlines, snapping, export behavior, or the saved document on its own.
 
 Toggle it with **View → Show Icon Grid**. Every setting is a font custom parameter, optionally overridden on the active master, so settings travel with the `.glyphs` file and can be edited through automation such as [Glyphs MCP](https://github.com/thierryc/Glyphs-mcp).
 
@@ -26,6 +26,8 @@ IconGrid.padding = 2
 IconGrid.baselineOffset = 100
 IconGrid.rings = 10
 IconGrid.spokes = 8
+IconGrid.hoverHighlight = true
+IconGrid.hoverTolerance = 5
 ```
 
 See [the complete parameter reference](docs/PARAMETERS.md) and [behavioral specification](docs/SPECIFICATION.md). Parameter changes redraw immediately when Glyphs refreshes the Edit view; the generic `set_custom_parameters` Glyphs MCP tool also requests a redraw and never saves implicitly.
@@ -53,6 +55,23 @@ python3 scripts/validate.py IconGrid.glyphsReporter --target both
 ```
 
 The deterministic tests assert numeric geometry rather than screenshots. The test fixture at `tests/fixtures/IconGrid-Test.glyphs` is disposable and contains two masters with different widths and overrides.
+
+### Development symlinks
+
+To test a working tree directly, link its `IconGrid.glyphsReporter` bundle into both plug-in folders:
+
+```sh
+icon_grid_repo="/absolute/path/to/GlyphsIconGrid"
+ln -s "$icon_grid_repo/IconGrid.glyphsReporter" "$HOME/Library/Application Support/Glyphs 3/Plugins/IconGrid.glyphsReporter"
+ln -s "$icon_grid_repo/IconGrid.glyphsReporter" "$HOME/Library/Application Support/Glyphs 4/Plugins/IconGrid.glyphsReporter"
+```
+
+Never replace an existing non-symlink installation automatically. Restart each Glyphs application after saving open documents. To remove only these development links:
+
+```sh
+unlink "$HOME/Library/Application Support/Glyphs 3/Plugins/IconGrid.glyphsReporter"
+unlink "$HOME/Library/Application Support/Glyphs 4/Plugins/IconGrid.glyphsReporter"
+```
 
 ## License and attribution
 

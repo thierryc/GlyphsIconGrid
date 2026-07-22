@@ -31,6 +31,7 @@ class Canvas(namedtuple("CanvasBase", "xmin ymin xmax ymax")):
 Line = namedtuple("Line", "x1 y1 x2 y2")
 Circle = namedtuple("Circle", "cx cy radius")
 Keyline = namedtuple("Keyline", "name shape x y width height")
+GuideRef = namedtuple("GuideRef", "kind index")
 
 
 class GridGeometry(object):
@@ -229,6 +230,137 @@ def line_width_for_scale(screen_pixels, scale):
     pixels = _finite_positive(screen_pixels) or 1.0
     resolved_scale = _finite_positive(scale) or 1.0
     return pixels / resolved_scale
+
+
+def _finite_point(point):
+    if point is None:
+        return None
+    try:
+        x, y = point
+        x = float(x)
+        y = float(y)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if not math.isfinite(x) or not math.isfinite(y):
+        return None
+    return x, y
+
+
+def _distance_to_segment(point, line):
+    px, py = point
+    dx = line.x2 - line.x1
+    dy = line.y2 - line.y1
+    length_squared = dx * dx + dy * dy
+    if length_squared <= _EPSILON:
+        return math.hypot(px - line.x1, py - line.y1)
+    projection = ((px - line.x1) * dx + (py - line.y1) * dy) / length_squared
+    projection = min(1.0, max(0.0, projection))
+    closest_x = line.x1 + projection * dx
+    closest_y = line.y1 + projection * dy
+    return math.hypot(px - closest_x, py - closest_y)
+
+
+def _frame_edges(frame):
+    return (
+        Line(frame.xmin, frame.ymin, frame.xmax, frame.ymin),
+        Line(frame.xmax, frame.ymin, frame.xmax, frame.ymax),
+        Line(frame.xmax, frame.ymax, frame.xmin, frame.ymax),
+        Line(frame.xmin, frame.ymax, frame.xmin, frame.ymin),
+    )
+
+
+def _distance_to_frame(point, frame):
+    return min(_distance_to_segment(point, edge) for edge in _frame_edges(frame))
+
+
+def _distance_to_circle(point, circle):
+    return abs(math.hypot(point[0] - circle.cx, point[1] - circle.cy) - circle.radius)
+
+
+def _keyline_primitive(keyline):
+    if keyline.shape == "circle":
+        return Circle(
+            keyline.x + keyline.width / 2.0,
+            keyline.y + keyline.height / 2.0,
+            min(keyline.width, keyline.height) / 2.0,
+        )
+    return Canvas(keyline.x, keyline.y, keyline.x + keyline.width, keyline.y + keyline.height)
+
+
+def _signature_number(value):
+    return round(float(value), 12)
+
+
+def _line_signature(line):
+    start = (_signature_number(line.x1), _signature_number(line.y1))
+    end = (_signature_number(line.x2), _signature_number(line.y2))
+    if end < start:
+        start, end = end, start
+    return ("line",) + start + end
+
+
+def _circle_signature(circle):
+    return (
+        "circle",
+        _signature_number(circle.cx),
+        _signature_number(circle.cy),
+        _signature_number(circle.radius),
+    )
+
+
+def _frame_signature(frame):
+    return ("frame",) + tuple(_signature_number(value) for value in frame)
+
+
+def _guide_catalog(geometry):
+    for kind, items in (
+        ("minor", geometry.minor_lines),
+        ("major", geometry.major_lines),
+        ("axis", geometry.axis_lines),
+        ("frame", geometry.frames),
+        ("ring", geometry.rings),
+        ("spoke", geometry.spokes),
+        ("keyline", geometry.keylines),
+    ):
+        for index, item in enumerate(items):
+            primitive = _keyline_primitive(item) if kind == "keyline" else item
+            if isinstance(primitive, Line):
+                signature = _line_signature(primitive)
+                distance = _distance_to_segment
+            elif isinstance(primitive, Circle):
+                signature = _circle_signature(primitive)
+                distance = _distance_to_circle
+            else:
+                signature = _frame_signature(primitive)
+                distance = _distance_to_frame
+            yield GuideRef(kind, index), primitive, signature, distance
+
+
+def hit_test_guides(geometry, point, tolerance):
+    """Return stable visible-guide references within a glyph-unit tolerance."""
+    if geometry is None:
+        return ()
+    resolved_point = _finite_point(point)
+    try:
+        resolved_tolerance = float(tolerance)
+    except (TypeError, ValueError, OverflowError):
+        return ()
+    if (
+        resolved_point is None
+        or not math.isfinite(resolved_tolerance)
+        or resolved_tolerance < 0
+    ):
+        return ()
+
+    hits = []
+    seen = set()
+    for reference, primitive, signature, distance in _guide_catalog(geometry):
+        if signature in seen:
+            continue
+        if distance(resolved_point, primitive) <= resolved_tolerance + _EPSILON:
+            hits.append(reference)
+            seen.add(signature)
+    return tuple(hits)
 
 
 def _round(value):

@@ -31,6 +31,8 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(config.show_keylines)
         self.assertEqual(config.color, "accent")
         self.assertAlmostEqual(config.opacity, 0.28)
+        self.assertTrue(config.hover_highlight)
+        self.assertEqual(config.hover_tolerance, 5.0)
         self.assertEqual(warnings, [])
 
     def test_all_nine_origins_are_supported(self):
@@ -52,15 +54,55 @@ class ConfigTests(unittest.TestCase):
                 "IconGrid.origin": "top-right",
                 "IconGrid.opacity": 0.4,
                 "IconGrid.baselineOffset": 80,
+                "IconGrid.hoverHighlight": False,
+                "IconGrid.hoverTolerance": 8,
             },
-            master={"IconGrid.rows": 16, "IconGrid.baselineOffset": 100},
+            master={
+                "IconGrid.rows": 16,
+                "IconGrid.baselineOffset": 100,
+                "IconGrid.hoverHighlight": True,
+            },
         )
         self.assertEqual((config.columns, config.rows), (32, 16))
         self.assertEqual(config.width, 840.0)
         self.assertEqual(config.origin, "top-right")
         self.assertEqual(config.opacity, 0.4)
         self.assertEqual(config.baseline_offset, 100.0)
+        self.assertTrue(config.hover_highlight)
+        self.assertEqual(config.hover_tolerance, 8.0)
         self.assertEqual(warnings, [])
+
+    def test_invalid_hover_values_fall_through_master_font_and_default(self):
+        config, warnings = self.resolve(
+            font={
+                "IconGrid.hoverHighlight": "off",
+                "IconGrid.hoverTolerance": 7,
+            },
+            master={
+                "IconGrid.hoverHighlight": "sometimes",
+                "IconGrid.hoverTolerance": 21,
+            },
+        )
+        self.assertFalse(config.hover_highlight)
+        self.assertEqual(config.hover_tolerance, 7.0)
+        self.assertEqual(len([item for item in warnings if "hover" in item]), 2)
+
+        default_config, default_warnings = self.resolve(
+            font={
+                "IconGrid.hoverHighlight": object(),
+                "IconGrid.hoverTolerance": 0,
+            }
+        )
+        self.assertTrue(default_config.hover_highlight)
+        self.assertEqual(default_config.hover_tolerance, 5.0)
+        self.assertEqual(len([item for item in default_warnings if "hover" in item]), 2)
+
+    def test_hover_tolerance_accepts_numeric_strings_at_both_limits(self):
+        minimum, warnings = self.resolve(font={"IconGrid.hoverTolerance": "1"})
+        maximum, maximum_warnings = self.resolve(font={"IconGrid.hoverTolerance": "20"})
+        self.assertEqual(minimum.hover_tolerance, 1.0)
+        self.assertEqual(maximum.hover_tolerance, 20.0)
+        self.assertEqual(warnings + maximum_warnings, [])
 
     def test_invalid_master_value_falls_back_to_valid_font_value(self):
         config, warnings = self.resolve(
@@ -179,6 +221,8 @@ class ConfigTests(unittest.TestCase):
                     "IconGrid.rings": value,
                     "IconGrid.spokes": value,
                     "IconGrid.opacity": value,
+                    "IconGrid.hoverHighlight": value,
+                    "IconGrid.hoverTolerance": value,
                 }
             )
             self.assertGreater(config.columns, 0)
@@ -187,6 +231,10 @@ class ConfigTests(unittest.TestCase):
             self.assertTrue(math.isfinite(config.width))
             self.assertTrue(math.isfinite(config.padding))
             self.assertTrue(math.isfinite(config.opacity))
+            self.assertIsInstance(config.hover_highlight, bool)
+            self.assertTrue(math.isfinite(config.hover_tolerance))
+            self.assertGreaterEqual(config.hover_tolerance, 1.0)
+            self.assertLessEqual(config.hover_tolerance, 20.0)
 
 
 if __name__ == "__main__":

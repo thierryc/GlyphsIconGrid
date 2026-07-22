@@ -3,7 +3,12 @@ from __future__ import absolute_import
 import unittest
 
 from tests import support  # noqa: F401
-from icon_grid.runtime import parameter_entries, resolve_layer_context, tool_allows_drawing
+from icon_grid.runtime import (
+    parameter_entries,
+    resolve_layer_context,
+    resolve_mouse_context,
+    tool_allows_drawing,
+)
 
 
 class Parameter(object):
@@ -79,6 +84,79 @@ class RuntimeTests(unittest.TestCase):
         self.assertFalse(tool_allows_drawing(Controller(Tool("GlyphsToolHand")), lookup))
         self.assertTrue(tool_allows_drawing(Controller(Tool("GlyphsToolSelect")), lookup))
         self.assertTrue(tool_allows_drawing(None, lookup))
+
+    def test_mouse_context_converts_event_to_active_layer_coordinates(self):
+        window = object()
+        layer = object()
+
+        class Event(object):
+            def window(self):
+                return window
+
+        class GraphicView(object):
+            def window(self):
+                return window
+
+            def activeLayer(self):
+                return layer
+
+            def getActiveLocation_(self, event):
+                self.event = event
+                return type("Point", (), {"x": 12.5, "y": -30.0})()
+
+            def scale(self):
+                return 2.0
+
+        graphic_view = GraphicView()
+        controller = type("Controller", (), {"graphicView": lambda self: graphic_view})()
+        event = Event()
+        context = resolve_mouse_context(controller, event)
+        self.assertIs(context.layer, layer)
+        self.assertEqual(context.point, (12.5, -30.0))
+        self.assertEqual(context.scale, 2.0)
+        self.assertIs(graphic_view.event, event)
+
+    def test_mouse_context_rejects_other_windows_and_invalid_values(self):
+        class GraphicView(object):
+            def window(self):
+                return object()
+
+            def activeLayer(self):
+                return object()
+
+            def getActiveLocation_(self, _event):
+                return (math.nan, 0)
+
+            def scale(self):
+                return 0
+
+        controller = type("Controller", (), {"graphicView": lambda self: GraphicView()})()
+        event = type("Event", (), {"window": lambda self: object()})()
+        self.assertIsNone(resolve_mouse_context(controller, event))
+        self.assertIsNone(resolve_mouse_context(None, event))
+        self.assertIsNone(resolve_mouse_context(controller, None))
+
+    def test_mouse_context_supports_property_shaped_glyphs_api(self):
+        window = object()
+        layer = object()
+
+        class GraphicView(object):
+            def __init__(self):
+                self.window = window
+                self.activeLayer = layer
+                self.scale = 4.0
+
+            def getActiveLocation_(self, _event):
+                return (25.0, 75.0)
+
+        controller = type("Controller", (), {})()
+        controller.graphicView = GraphicView()
+        event = type("Event", (), {})()
+        event.window = window
+        context = resolve_mouse_context(controller, event)
+        self.assertEqual(context.point, (25.0, 75.0))
+        self.assertEqual(context.scale, 4.0)
+        self.assertIs(context.layer, layer)
 
 
 if __name__ == "__main__":

@@ -17,6 +17,8 @@ Resolution is field-by-field: the active master’s valid `IconGrid.*` value win
 | `IconGrid.showKeylines` | Boolean or `on/off`, `yes/no`, `true/false`, `1/0` | `true` |
 | `IconGrid.color` | `accent`, `grid`, `label`, `separator`, or `#RRGGBB` | `accent` |
 | `IconGrid.opacity` | Number, clamped to 0–1 | `0.28` |
+| `IconGrid.hoverHighlight` | Boolean or `on/off`, `yes/no`, `true/false`, `1/0` | `true` |
+| `IconGrid.hoverTolerance` | Number from 1–20, measured in screen points | `5` |
 
 Supported origins are `bottom-left`, `bottom-center`, `bottom-right`, `center-left`, `center`, `center-right`, `top-left`, `top-center`, and `top-right`.
 
@@ -25,3 +27,5 @@ Supported origins are `bottom-left`, `bottom-center`, `bottom-right`, `center-le
 Grid cadence is measured outwards from the chosen horizontal anchor and from y=0, not from the canvas minimum. Circular guides remain centered on the translated fixed canvas.
 
 `IconGrid.padding` is measured separately in x and y cells. It is clamped before the live area can collapse. Geometry counts are bounded to keep redraw work predictable.
+
+When hover highlighting is enabled, every visible guide within `hoverTolerance` of the pointer is highlighted. The tolerance is divided by the current zoom scale, so it remains constant on screen. At crossings, all matching guides highlight together. Hover state is temporary and is never written to the font.

@@ -30,11 +30,15 @@ DEFAULTS = {
     "show_keylines": True,
     "color": "accent",
     "opacity": 0.28,
+    "hover_highlight": True,
+    "hover_tolerance": 5.0,
 }
 
 MAX_DIVISIONS = 256
 MAX_RINGS = 128
 MAX_SPOKES = 360
+MIN_HOVER_TOLERANCE = 1.0
+MAX_HOVER_TOLERANCE = 20.0
 
 
 class GridConfig(object):
@@ -54,6 +58,8 @@ class GridConfig(object):
         "show_keylines",
         "color",
         "opacity",
+        "hover_highlight",
+        "hover_tolerance",
     )
 
     def __init__(
@@ -71,6 +77,8 @@ class GridConfig(object):
         show_keylines,
         color,
         opacity,
+        hover_highlight,
+        hover_tolerance,
     ):
         self.columns = columns
         self.rows = rows
@@ -85,6 +93,8 @@ class GridConfig(object):
         self.show_keylines = show_keylines
         self.color = color
         self.opacity = opacity
+        self.hover_highlight = hover_highlight
+        self.hover_tolerance = hover_tolerance
 
 
 def _finite_number(value):
@@ -172,6 +182,15 @@ def _nonnegative_number(value):
     if number is None or number < 0:
         return False, None, None
     return True, number, None
+
+
+def _number_in_range(minimum, maximum):
+    def parse(value):
+        number = _finite_number(value)
+        if number is None or number < minimum or number > maximum:
+            return False, None, None
+        return True, number, None
+    return parse
 
 
 def _origin(value):
@@ -277,6 +296,17 @@ def resolve_config(
     show_keylines = _choose("showKeylines", _boolean, master, font, DEFAULTS["show_keylines"], warnings)
     color = _choose("color", _color, master, font, DEFAULTS["color"], warnings)
     opacity = _choose("opacity", _opacity, master, font, DEFAULTS["opacity"], warnings)
+    hover_highlight = _choose(
+        "hoverHighlight", _boolean, master, font, DEFAULTS["hover_highlight"], warnings
+    )
+    hover_tolerance = _choose(
+        "hoverTolerance",
+        _number_in_range(MIN_HOVER_TOLERANCE, MAX_HOVER_TOLERANCE),
+        master,
+        font,
+        DEFAULTS["hover_tolerance"],
+        warnings,
+    )
 
     maximum_padding = max(0.0, (min(columns, rows) - 1.0) / 2.0)
     if padding > maximum_padding:
@@ -302,4 +332,6 @@ def resolve_config(
         show_keylines=show_keylines,
         color=color,
         opacity=opacity,
+        hover_highlight=hover_highlight,
+        hover_tolerance=hover_tolerance,
     ), warnings

@@ -13,6 +13,8 @@ Do not publish `0.1.0` until every automated and live item is checked. Never use
 - [x] Bundle/plist validation
 - [x] Universal x86_64/arm64 wrapper validation
 - [x] Static validation with `--target both`
+- [x] Pure hover hit-testing for every guide type, intersections, and invalid input
+- [x] Injected mouse callback lifecycle, coordinate conversion, and redraw tests
 
 ## Glyphs 3.5 build 3530
 
@@ -20,6 +22,7 @@ Do not publish `0.1.0` until every automated and live item is checked. Never use
 - [x] Install disposable plug-in copy and open `tests/fixtures/IconGrid-Test.glyphs`
 - [x] Reporter appears only as **View → Show Icon Grid**
 - [ ] Show/hide, all origins, both masters, fixed grid across glyph widths, zooms, light/dark appearance
+- [ ] Hover entry/exit, all guide types, intersections, zoom levels, and unsupported tools
 - [ ] Glyphs MCP parameter edit redraws immediately
 - [ ] Explicit save/reopen preserves parameters
 - [ ] No Macro Panel exception, outline/snapping change, or implicit save
@@ -31,6 +34,7 @@ Do not publish `0.1.0` until every automated and live item is checked. Never use
 - [x] Install disposable plug-in copy and open `tests/fixtures/IconGrid-Test.glyphs`
 - [ ] Reporter appears only as **View → Show Icon Grid**
 - [ ] Show/hide, all origins, both masters, fixed grid across glyph widths, zooms, light/dark appearance
+- [ ] Hover entry/exit, all guide types, intersections, zoom levels, and unsupported tools
 - [ ] Glyphs MCP parameter edit redraws immediately
 - [ ] Explicit save/reopen preserves parameters
 - [ ] No Macro Panel exception, outline/snapping change, or implicit save

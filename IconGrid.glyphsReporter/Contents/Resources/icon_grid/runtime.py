@@ -7,6 +7,7 @@ from collections import namedtuple
 
 
 LayerContext = namedtuple("LayerContext", "layer glyph font master width")
+MouseContext = namedtuple("MouseContext", "layer point scale")
 
 
 def parameter_entries(owner):
@@ -69,3 +70,46 @@ def tool_allows_drawing(controller, class_lookup):
     except (AttributeError, TypeError):
         return True
     return True
+
+
+def _object_value(owner, name):
+    value = getattr(owner, name)
+    return value() if callable(value) else value
+
+
+def _point_tuple(point):
+    try:
+        x = float(point.x)
+        y = float(point.y)
+    except AttributeError:
+        try:
+            x = float(point[0])
+            y = float(point[1])
+        except (TypeError, ValueError, OverflowError, IndexError):
+            return None
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if not math.isfinite(x) or not math.isfinite(y):
+        return None
+    return x, y
+
+
+def resolve_mouse_context(controller, event):
+    """Convert a mouse event to active-layer coordinates without Glyphs imports."""
+    if controller is None or event is None:
+        return None
+    try:
+        graphic_view = _object_value(controller, "graphicView")
+        view_window = _object_value(graphic_view, "window")
+        event_window = _object_value(event, "window")
+        if view_window is not None and event_window is not None and view_window != event_window:
+            return None
+        layer = _object_value(graphic_view, "activeLayer")
+        location_method = getattr(graphic_view, "getActiveLocation_")
+        point = _point_tuple(location_method(event))
+        scale = float(_object_value(graphic_view, "scale"))
+    except (AttributeError, TypeError, ValueError, OverflowError):
+        return None
+    if layer is None or point is None or not math.isfinite(scale) or scale <= 0:
+        return None
+    return MouseContext(layer, point, scale)
