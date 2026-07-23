@@ -5,6 +5,7 @@ from __future__ import absolute_import, print_function
 
 import os
 import plistlib
+import hashlib
 import stat
 import zipfile
 
@@ -37,6 +38,18 @@ def main():
                 info.external_attr = (stat.S_IFREG | mode) << 16
                 with open(path, "rb") as handle:
                     archive.writestr(info, handle.read(), compress_type=zipfile.ZIP_DEFLATED)
+        for filename in ("LICENSE", "NOTICE"):
+            path = os.path.join(ROOT, filename)
+            info = zipfile.ZipInfo(filename, date_time=(2026, 1, 1, 0, 0, 0))
+            mode = stat.S_IMODE(os.stat(path).st_mode)
+            info.external_attr = (stat.S_IFREG | mode) << 16
+            with open(path, "rb") as handle:
+                archive.writestr(info, handle.read(), compress_type=zipfile.ZIP_DEFLATED)
+    with open(output, "rb") as handle:
+        digest = hashlib.sha256(handle.read()).hexdigest()
+    checksum = output + ".sha256"
+    with open(checksum, "w", encoding="ascii", newline="\n") as handle:
+        handle.write("{}  {}\n".format(digest, os.path.basename(output)))
     print(output)
     return output
 

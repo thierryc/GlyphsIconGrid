@@ -7,6 +7,9 @@ from collections import namedtuple
 
 
 _EPSILON = 1e-9
+_MIN_GRID_OVERFLOW_CELLS = 1
+_MAX_GRID_OVERFLOW_CELLS = 6
+_MAX_RING_COUNT = 128
 
 
 class Canvas(namedtuple("CanvasBase", "xmin ymin xmax ymax")):
@@ -37,6 +40,7 @@ GuideRef = namedtuple("GuideRef", "kind index")
 class GridGeometry(object):
     __slots__ = (
         "canvas",
+        "grid_bounds",
         "live_area",
         "center",
         "live_radius",
@@ -52,6 +56,7 @@ class GridGeometry(object):
     def __init__(
         self,
         canvas,
+        grid_bounds,
         live_area,
         minor_lines,
         major_lines,
@@ -62,6 +67,7 @@ class GridGeometry(object):
         keylines,
     ):
         self.canvas = canvas
+        self.grid_bounds = grid_bounds
         self.live_area = live_area
         self.center = canvas.center
         self.live_radius = min(live_area.width, live_area.height) / 2.0
@@ -83,6 +89,16 @@ def _finite_positive(value):
     except (TypeError, ValueError, OverflowError):
         return None
     if not math.isfinite(number) or number <= 0:
+        return None
+    return number
+
+
+def _finite_number(value):
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if not math.isfinite(number):
         return None
     return number
 
@@ -111,20 +127,35 @@ def _near(a, b):
     return abs(a - b) <= _EPSILON
 
 
-def _grid_positions(start, end, step, major_every, anchor=0.0):
-    minimum_index = int(math.ceil((start - anchor - _EPSILON) / step))
-    maximum_index = int(math.floor((end - anchor + _EPSILON) / step))
+def _grid_positions(
+    start,
+    end,
+    step,
+    major_every,
+    center,
+    mode,
+    include_boundaries=False,
+):
+    phase = 0.0 if mode == "even" else 0.5
+    minimum_index = int(math.ceil((start - center) / step - phase - _EPSILON))
+    maximum_index = int(math.floor((end - center) / step - phase + _EPSILON))
     minor = []
     major = []
     axes = []
     for index in range(minimum_index, maximum_index + 1):
-        position = anchor + index * step
-        is_axis = index == 0
+        position = center + (index + phase) * step
+        is_axis = mode == "even" and index == 0
         is_boundary = _near(position, start) or _near(position, end)
-        if is_boundary and not is_axis:
+        if is_boundary and not is_axis and not include_boundaries:
             continue
         if is_axis:
             axes.append(position)
+        elif mode == "odd":
+            cadence = index + 1 if index >= 0 else -index
+            if major_every and cadence % major_every == 0:
+                major.append(position)
+            else:
+                minor.append(position)
         elif major_every and abs(index) % major_every == 0:
             major.append(position)
         else:
@@ -143,9 +174,6 @@ def build_geometry(width, config):
     if layer_width is None or height is None or grid_width is None:
         return None
 
-    _vertical_origin, horizontal_origin = _origin_parts(config.origin)
-    horizontal_factor = {"left": 0.0, "center": 0.5, "right": 1.0}[horizontal_origin]
-    horizontal_anchor = horizontal_factor * layer_width
     canvas = canvas_for_origin(
         grid_width, height, config.origin, anchor_width=layer_width
     )
@@ -156,21 +184,61 @@ def build_geometry(width, config):
         canvas.xmax,
         canvas.ymax - baseline_offset,
     )
-    step_x = grid_width / float(config.columns)
-    step_y = height / float(config.rows)
+    grid_size = _finite_positive(getattr(config, "grid_size", None))
+    if grid_size is None:
+        step_x = grid_width / float(config.columns)
+        step_y = height / float(config.rows)
+    else:
+        step_x = grid_size
+        step_y = grid_size
+    overflow_cells = _MIN_GRID_OVERFLOW_CELLS
+    metric_top = _finite_number(getattr(config, "metric_top", None))
+    metric_bottom = _finite_number(getattr(config, "metric_bottom", None))
+    required_overflow = step_y
+    if metric_top is not None:
+        required_overflow = max(required_overflow, metric_top - canvas.ymax + step_y)
+    if metric_bottom is not None:
+        required_overflow = max(required_overflow, canvas.ymin - metric_bottom + step_y)
+    overflow_cells = min(
+        _MAX_GRID_OVERFLOW_CELLS,
+        max(
+            overflow_cells,
+            int(math.ceil(max(0.0, required_overflow - _EPSILON) / step_y)),
+        ),
+    )
+    grid_bounds = Canvas(
+        canvas.xmin - overflow_cells * step_x,
+        canvas.ymin - overflow_cells * step_y,
+        canvas.xmax + overflow_cells * step_x,
+        canvas.ymax + overflow_cells * step_y,
+    )
+    center_x, center_y = canvas.center
+    grid_mode = getattr(config, "grid_mode", "odd")
 
     vertical_minor_x, vertical_major_x, vertical_axis_x = _grid_positions(
-        canvas.xmin, canvas.xmax, step_x, config.major_every, horizontal_anchor
+        grid_bounds.xmin,
+        grid_bounds.xmax,
+        step_x,
+        config.major_every,
+        center_x,
+        grid_mode,
+        include_boundaries=True,
     )
     horizontal_minor_y, horizontal_major_y, horizontal_axis_y = _grid_positions(
-        canvas.ymin, canvas.ymax, step_y, config.major_every
+        grid_bounds.ymin,
+        grid_bounds.ymax,
+        step_y,
+        config.major_every,
+        center_y,
+        grid_mode,
+        include_boundaries=True,
     )
-    vertical_minor = [Line(x, canvas.ymin, x, canvas.ymax) for x in vertical_minor_x]
-    vertical_major = [Line(x, canvas.ymin, x, canvas.ymax) for x in vertical_major_x]
-    vertical_axes = [Line(x, canvas.ymin, x, canvas.ymax) for x in vertical_axis_x]
-    horizontal_minor = [Line(canvas.xmin, y, canvas.xmax, y) for y in horizontal_minor_y]
-    horizontal_major = [Line(canvas.xmin, y, canvas.xmax, y) for y in horizontal_major_y]
-    horizontal_axes = [Line(canvas.xmin, y, canvas.xmax, y) for y in horizontal_axis_y]
+    vertical_minor = [Line(x, grid_bounds.ymin, x, grid_bounds.ymax) for x in vertical_minor_x]
+    vertical_major = [Line(x, grid_bounds.ymin, x, grid_bounds.ymax) for x in vertical_major_x]
+    vertical_axes = [Line(x, grid_bounds.ymin, x, grid_bounds.ymax) for x in vertical_axis_x]
+    horizontal_minor = [Line(grid_bounds.xmin, y, grid_bounds.xmax, y) for y in horizontal_minor_y]
+    horizontal_major = [Line(grid_bounds.xmin, y, grid_bounds.xmax, y) for y in horizontal_major_y]
+    horizontal_axes = [Line(grid_bounds.xmin, y, grid_bounds.xmax, y) for y in horizontal_axis_y]
 
     inset_x = min(config.padding * step_x, grid_width / 2.0)
     inset_y = min(config.padding * step_y, height / 2.0)
@@ -181,10 +249,17 @@ def build_geometry(width, config):
         canvas.ymax - inset_y,
     )
     live_radius = max(0.0, min(live_area.width, live_area.height) / 2.0)
-    center_x, center_y = canvas.center
-
     rings = []
-    if config.rings > 0 and live_radius > 0:
+    if grid_size is not None and live_radius > 0:
+        ring_count = min(
+            _MAX_RING_COUNT,
+            int(math.floor((live_radius + _EPSILON) / grid_size)),
+        )
+        rings = [
+            Circle(center_x, center_y, grid_size * index)
+            for index in range(1, ring_count + 1)
+        ]
+    elif config.rings > 0 and live_radius > 0:
         rings = [
             Circle(center_x, center_y, live_radius * index / float(config.rings))
             for index in range(1, config.rings + 1)
@@ -215,6 +290,7 @@ def build_geometry(width, config):
 
     return GridGeometry(
         canvas=canvas,
+        grid_bounds=grid_bounds,
         live_area=live_area,
         minor_lines=vertical_minor + horizontal_minor,
         major_lines=vertical_major + horizontal_major,
@@ -371,6 +447,7 @@ def snapshot(geometry):
     """Return stable plain data suitable for regression tests."""
     return {
         "canvas": [_round(value) for value in geometry.canvas],
+        "gridBounds": [_round(value) for value in geometry.grid_bounds],
         "liveArea": [_round(value) for value in geometry.live_area],
         "center": [_round(value) for value in geometry.center],
         "minor": [[_round(value) for value in line] for line in geometry.minor_lines],

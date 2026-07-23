@@ -14,7 +14,7 @@ import sys
 
 
 EXPECTED_ID = "com.thierryc.GlyphsIconGrid"
-EXPECTED_CLASS = "GlyphsIconGrid"
+EXPECTED_CLASS = "GlyphsIconGridReporter"
 EXPECTED_LOADER_SHA256 = "165af5653635741bbf6698476aff5f868618a8040bc76d8abb7076f7115e91fa"
 REQUIRED_CPU_TYPES = {0x01000007, 0x0100000C}  # x86_64, arm64
 

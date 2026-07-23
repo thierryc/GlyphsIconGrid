@@ -1,0 +1,39 @@
+{
+.appVersion = "3877";
+.formatVersion = 3;
+familyName = "IconGrid Matrix Recommended Masters";
+fontMaster = (
+{
+customParameters = (
+{
+name = IconGrid.gridSize;
+value = 34;
+}
+);
+id = regular;
+metricValues = ({pos = 800;},{pos = 700;},{pos = 500;},{},{pos = -200;});
+name = Regular;
+},
+{
+customParameters = (
+{
+name = IconGrid.gridSize;
+value = 72;
+}
+);
+id = bold;
+metricValues = ({pos = 800;},{pos = 700;},{pos = 500;},{},{pos = -200;});
+name = Bold;
+}
+);
+glyphs = (
+{
+glyphname = test;
+layers = ({layerId = regular;width = 1000;},{layerId = bold;width = 1000;});
+}
+);
+metrics = ({type = ascender;},{type = "cap height";},{type = "x-height";},{type = baseline;},{type = descender;});
+unitsPerEm = 1000;
+versionMajor = 1;
+versionMinor = 0;
+}

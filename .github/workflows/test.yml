@@ -1,8 +1,9 @@
-name: test
+name: Tests
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,16 +16,20 @@ jobs:
       matrix:
         python: ["3.9", "3.11", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
       - run: python -m unittest discover -v
       - run: python -m compileall -q IconGrid.glyphsReporter tests scripts
       - run: python scripts/validate.py IconGrid.glyphsReporter --target both
       - run: python scripts/package.py
+      - run: python scripts/release_check.py --require-artifacts
+      - run: python scripts/build_site.py
       - uses: actions/upload-artifact@v4
         if: matrix.python == '3.11'
         with:
           name: GlyphsIconGrid-test-zip
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/*.sha256

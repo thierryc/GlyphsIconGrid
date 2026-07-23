@@ -7,6 +7,7 @@ from collections.abc import Mapping
 
 
 PREFIX = "IconGrid."
+DEFAULT_GRID_COLOR = (10.0 / 255.0, 132.0 / 255.0, 1.0)
 ORIGINS = (
     "bottom-left",
     "bottom-center",
@@ -18,27 +19,50 @@ ORIGINS = (
     "top-center",
     "top-right",
 )
+GRID_MODES = ("odd", "even")
+PARAMETER_NAMES = (
+    "IconGrid.columns",
+    "IconGrid.rows",
+    "IconGrid.gridSize",
+    "IconGrid.gridMode",
+    "IconGrid.width",
+    "IconGrid.height",
+    "IconGrid.origin",
+    "IconGrid.baselineOffset",
+    "IconGrid.padding",
+    "IconGrid.majorEvery",
+    "IconGrid.rings",
+    "IconGrid.spokes",
+    "IconGrid.showKeylines",
+    "IconGrid.color",
+    "IconGrid.opacity",
+    "IconGrid.alignmentHighlight",
+    "IconGrid.alignmentTolerance",
+)
 
 DEFAULTS = {
     "columns": 24,
     "rows": 24,
-    "origin": "bottom-left",
+    "grid_size": None,
+    "grid_mode": "odd",
+    "origin": "bottom-center",
     "baseline_offset": 0.0,
     "padding": 2.0,
     "major_every": 4,
     "spokes": 8,
     "show_keylines": True,
-    "color": "accent",
+    "color": DEFAULT_GRID_COLOR,
     "opacity": 0.28,
-    "hover_highlight": True,
-    "hover_tolerance": 5.0,
+    "alignment_highlight": True,
+    "alignment_tolerance": 2.0,
 }
 
 MAX_DIVISIONS = 256
 MAX_RINGS = 128
 MAX_SPOKES = 360
-MIN_HOVER_TOLERANCE = 1.0
-MAX_HOVER_TOLERANCE = 20.0
+MIN_ALIGNMENT_TOLERANCE = 1.0
+MAX_ALIGNMENT_TOLERANCE = 20.0
+MAX_AUTOMATIC_METRIC = 1000000.0
 
 
 class GridConfig(object):
@@ -47,6 +71,8 @@ class GridConfig(object):
     __slots__ = (
         "columns",
         "rows",
+        "grid_size",
+        "grid_mode",
         "height",
         "width",
         "origin",
@@ -58,14 +84,18 @@ class GridConfig(object):
         "show_keylines",
         "color",
         "opacity",
-        "hover_highlight",
-        "hover_tolerance",
+        "alignment_highlight",
+        "alignment_tolerance",
+        "metric_top",
+        "metric_bottom",
     )
 
     def __init__(
         self,
         columns,
         rows,
+        grid_size,
+        grid_mode,
         height,
         width,
         origin,
@@ -77,11 +107,15 @@ class GridConfig(object):
         show_keylines,
         color,
         opacity,
-        hover_highlight,
-        hover_tolerance,
+        alignment_highlight,
+        alignment_tolerance,
+        metric_top,
+        metric_bottom,
     ):
         self.columns = columns
         self.rows = rows
+        self.grid_size = grid_size
+        self.grid_mode = grid_mode
         self.height = height
         self.width = width
         self.origin = origin
@@ -93,8 +127,10 @@ class GridConfig(object):
         self.show_keylines = show_keylines
         self.color = color
         self.opacity = opacity
-        self.hover_highlight = hover_highlight
-        self.hover_tolerance = hover_tolerance
+        self.alignment_highlight = alignment_highlight
+        self.alignment_tolerance = alignment_tolerance
+        self.metric_top = metric_top
+        self.metric_bottom = metric_bottom
 
 
 def _finite_number(value):
@@ -193,10 +229,27 @@ def _number_in_range(minimum, maximum):
     return parse
 
 
+def _grid_size_parser(minimum):
+    def parse(value):
+        number = _finite_number(value)
+        if number is None or number <= 0 or number < minimum:
+            return False, None, None
+        return True, number, None
+    return parse
+
+
 def _origin(value):
     if isinstance(value, str):
         normalized = value.strip().lower()
         if normalized in ORIGINS:
+            return True, normalized, None
+    return False, None, None
+
+
+def _grid_mode(value):
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in GRID_MODES:
             return True, normalized, None
     return False, None, None
 
@@ -240,20 +293,29 @@ def _opacity(value):
     return True, clamped, note
 
 
-def _fallback_height(cap_height, upm):
-    for value in (cap_height, upm, 1000):
-        ok, number, _note = _positive_number(value)
-        if ok:
-            return number
+def _fallback_square_size(cap_height, upm):
+    upm_ok, resolved_upm, _note = _positive_number(upm)
+    if upm_ok and resolved_upm <= MAX_AUTOMATIC_METRIC:
+        return resolved_upm
+    cap_ok, resolved_cap_height, _note = _positive_number(cap_height)
+    if cap_ok and resolved_cap_height <= MAX_AUTOMATIC_METRIC:
+        return resolved_cap_height
     return 1000.0
 
 
-def _fallback_width(upm):
-    for value in (upm, 1000):
-        ok, number, _note = _positive_number(value)
-        if ok:
-            return number * 1.5
-    return 1500.0
+def _bounded_metric(value, upm, positive=False):
+    number = _finite_number(value)
+    if number is None or (positive and number <= 0):
+        return None
+    upm_ok, resolved_upm, _note = _positive_number(upm)
+    maximum = (
+        min(MAX_AUTOMATIC_METRIC, resolved_upm * 10.0)
+        if upm_ok
+        else MAX_AUTOMATIC_METRIC
+    )
+    if abs(number) > maximum:
+        return None
+    return number
 
 
 def _choose(name, parser, master, font, fallback, warnings):
@@ -275,6 +337,9 @@ def resolve_config(
     master_parameters,
     master_cap_height,
     font_upm,
+    master_x_height=None,
+    master_ascender=None,
+    master_descender=None,
 ):
     """Return ``(GridConfig, warnings)`` using master-over-font precedence."""
 
@@ -282,13 +347,32 @@ def resolve_config(
     master, master_warnings = _parameter_map(master_parameters, "master")
     warnings = font_warnings + master_warnings
 
-    columns = _choose("columns", _integer_parser(1, MAX_DIVISIONS), master, font, DEFAULTS["columns"], warnings)
+    square_size = _fallback_square_size(master_cap_height, font_upm)
+    columns = _choose(
+        "columns", _integer_parser(1, MAX_DIVISIONS), master, font, DEFAULTS["columns"], warnings
+    )
     rows = _choose("rows", _integer_parser(1, MAX_DIVISIONS), master, font, DEFAULTS["rows"], warnings)
-    height = _choose("height", _positive_number, master, font, _fallback_height(master_cap_height, font_upm), warnings)
-    width = _choose("width", _positive_number, master, font, _fallback_width(font_upm), warnings)
+    height = _choose("height", _positive_number, master, font, square_size, warnings)
+    width = _choose("width", _positive_number, master, font, square_size, warnings)
+    minimum_grid_size = max(width, height) / float(MAX_DIVISIONS)
+    grid_size = _choose(
+        "gridSize",
+        _grid_size_parser(minimum_grid_size),
+        master,
+        font,
+        DEFAULTS["grid_size"],
+        warnings,
+    )
+    grid_mode = _choose(
+        "gridMode", _grid_mode, master, font, DEFAULTS["grid_mode"], warnings
+    )
     origin = _choose("origin", _origin, master, font, DEFAULTS["origin"], warnings)
+    x_height = _bounded_metric(master_x_height, font_upm, positive=True)
+    default_baseline_offset = DEFAULTS["baseline_offset"]
+    if origin == DEFAULTS["origin"] and x_height is not None:
+        default_baseline_offset = (height - x_height) / 2.0
     baseline_offset = _choose(
-        "baselineOffset", _number, master, font, DEFAULTS["baseline_offset"], warnings
+        "baselineOffset", _number, master, font, default_baseline_offset, warnings
     )
     padding = _choose("padding", _nonnegative_number, master, font, DEFAULTS["padding"], warnings)
     major_every = _choose("majorEvery", _integer_parser(0, MAX_DIVISIONS), master, font, DEFAULTS["major_every"], warnings)
@@ -296,19 +380,27 @@ def resolve_config(
     show_keylines = _choose("showKeylines", _boolean, master, font, DEFAULTS["show_keylines"], warnings)
     color = _choose("color", _color, master, font, DEFAULTS["color"], warnings)
     opacity = _choose("opacity", _opacity, master, font, DEFAULTS["opacity"], warnings)
-    hover_highlight = _choose(
-        "hoverHighlight", _boolean, master, font, DEFAULTS["hover_highlight"], warnings
-    )
-    hover_tolerance = _choose(
-        "hoverTolerance",
-        _number_in_range(MIN_HOVER_TOLERANCE, MAX_HOVER_TOLERANCE),
+    alignment_highlight = _choose(
+        "alignmentHighlight",
+        _boolean,
         master,
         font,
-        DEFAULTS["hover_tolerance"],
+        DEFAULTS["alignment_highlight"],
+        warnings,
+    )
+    alignment_tolerance = _choose(
+        "alignmentTolerance",
+        _number_in_range(MIN_ALIGNMENT_TOLERANCE, MAX_ALIGNMENT_TOLERANCE),
+        master,
+        font,
+        DEFAULTS["alignment_tolerance"],
         warnings,
     )
 
-    maximum_padding = max(0.0, (min(columns, rows) - 1.0) / 2.0)
+    step_x = grid_size if grid_size is not None else width / float(columns)
+    step_y = grid_size if grid_size is not None else height / float(rows)
+    usable_cell_span = min(width / step_x, height / step_y)
+    maximum_padding = max(0.0, (usable_cell_span - 1.0) / 2.0)
     if padding > maximum_padding:
         warnings.append(
             "IconGrid.padding clamped from {!r} to {!r}".format(padding, maximum_padding)
@@ -318,9 +410,19 @@ def resolve_config(
     automatic_rings = max(0, int(math.floor(min(columns, rows) / 2.0 - padding)))
     rings = _choose("rings", _integer_parser(0, MAX_RINGS), master, font, automatic_rings, warnings)
 
+    metric_candidates = (
+        _bounded_metric(master_cap_height, font_upm, positive=True),
+        _bounded_metric(master_ascender, font_upm, positive=True),
+    )
+    metric_top_values = [value for value in metric_candidates if value is not None]
+    metric_top = max(metric_top_values) if metric_top_values else None
+    metric_bottom = _bounded_metric(master_descender, font_upm)
+
     return GridConfig(
         columns=columns,
         rows=rows,
+        grid_size=grid_size,
+        grid_mode=grid_mode,
         height=height,
         width=width,
         origin=origin,
@@ -332,6 +434,8 @@ def resolve_config(
         show_keylines=show_keylines,
         color=color,
         opacity=opacity,
-        hover_highlight=hover_highlight,
-        hover_tolerance=hover_tolerance,
+        alignment_highlight=alignment_highlight,
+        alignment_tolerance=alignment_tolerance,
+        metric_top=metric_top,
+        metric_bottom=metric_bottom,
     ), warnings

@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest an improvement to the reporter or workflow
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Design problem
+      description: Explain the icon-design problem before proposing the option.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: masters
+    attributes:
+      label: Master and UPM considerations
+      description: Note whether the behavior should be font-wide or master-specific.

@@ -1,0 +1,50 @@
+name: Bug report
+description: Report a reproducible GlyphsIconGrid problem
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve GlyphsIconGrid. Use a disposable font when possible.
+  - type: input
+    id: plugin-version
+    attributes:
+      label: GlyphsIconGrid version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: glyphs-version
+    attributes:
+      label: Glyphs version
+      options:
+        - Glyphs 4
+        - Glyphs 3.5
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Exact Glyphs build and macOS version
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Include the active master and relevant IconGrid.* parameters.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I removed private font data and used a disposable copy where possible.
+          required: true

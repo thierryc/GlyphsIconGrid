@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "supportedParameters": [
+    "IconGrid.columns",
+    "IconGrid.rows",
+    "IconGrid.gridSize",
+    "IconGrid.gridMode",
+    "IconGrid.width",
+    "IconGrid.height",
+    "IconGrid.origin",
+    "IconGrid.baselineOffset",
+    "IconGrid.padding",
+    "IconGrid.majorEvery",
+    "IconGrid.rings",
+    "IconGrid.spokes",
+    "IconGrid.showKeylines",
+    "IconGrid.color",
+    "IconGrid.opacity",
+    "IconGrid.alignmentHighlight",
+    "IconGrid.alignmentTolerance"
+  ],
+  "cases": [
+    {
+      "id": "defaults",
+      "file": "parameter-matrix/defaults.glyphs",
+      "fontParameters": [],
+      "masterParameters": {"regular": []},
+      "effective": {
+        "regular": {
+          "grid_size": null,
+          "grid_mode": "odd",
+          "columns": 24,
+          "rows": 24
+        }
+      },
+      "warningsContain": [],
+      "mutation": {
+        "scope": "font",
+        "changes": {"IconGrid.gridMode": "even"},
+        "saveReopen": false
+      }
+    },
+    {
+      "id": "recommended-masters",
+      "file": "parameter-matrix/recommended-masters.glyphs",
+      "fontParameters": [],
+      "masterParameters": {
+        "regular": [{"name": "IconGrid.gridSize", "value": 34, "active": true}],
+        "bold": [{"name": "IconGrid.gridSize", "value": 72, "active": true}]
+      },
+      "effective": {
+        "regular": {"grid_size": 34, "grid_mode": "odd"},
+        "bold": {"grid_size": 72, "grid_mode": "odd"}
+      },
+      "warningsContain": [],
+      "mutation": {
+        "scope": "master",
+        "master": "regular",
+        "changes": {"IconGrid.gridSize": 36},
+        "saveReopen": true
+      }
+    },
+    {
+      "id": "font-master-overrides",
+      "file": "parameter-matrix/font-master-overrides.glyphs",
+      "fontParameters": [
+        {"name": "IconGrid.columns", "value": 20, "active": true},
+        {"name": "IconGrid.rows", "value": 22, "active": true},
+        {"name": "IconGrid.gridMode", "value": "even", "active": true},
+        {"name": "IconGrid.width", "value": 960, "active": true},
+        {"name": "IconGrid.height", "value": 980, "active": true},
+        {"name": "IconGrid.origin", "value": "center", "active": true},
+        {"name": "IconGrid.baselineOffset", "value": 12, "active": true},
+        {"name": "IconGrid.padding", "value": 1.5, "active": true},
+        {"name": "IconGrid.majorEvery", "value": 5, "active": true},
+        {"name": "IconGrid.rings", "value": 8, "active": true},
+        {"name": "IconGrid.spokes", "value": 12, "active": true},
+        {"name": "IconGrid.showKeylines", "value": 0, "active": true},
+        {"name": "IconGrid.color", "value": "#FF6600", "active": true},
+        {"name": "IconGrid.opacity", "value": 0.45, "active": true},
+        {"name": "IconGrid.alignmentHighlight", "value": 1, "active": true},
+        {"name": "IconGrid.alignmentTolerance", "value": 4, "active": true}
+      ],
+      "masterParameters": {
+        "regular": [
+          {"name": "IconGrid.gridSize", "value": 34, "active": true},
+          {"name": "IconGrid.gridMode", "value": "odd", "active": true}
+        ],
+        "bold": [{"name": "IconGrid.gridSize", "value": 72, "active": true}]
+      },
+      "effective": {
+        "regular": {
+          "grid_size": 34,
+          "grid_mode": "odd",
+          "width": 960,
+          "height": 980,
+          "origin": "center",
+          "baseline_offset": 12,
+          "padding": 1.5,
+          "major_every": 5,
+          "spokes": 12,
+          "show_keylines": false,
+          "opacity": 0.45,
+          "alignment_highlight": true,
+          "alignment_tolerance": 4
+        },
+        "bold": {
+          "grid_size": 72,
+          "grid_mode": "even"
+        }
+      },
+      "warningsContain": [],
+      "mutation": {
+        "scope": "font",
+        "changes": {"IconGrid.color": "accent", "IconGrid.opacity": 0.3},
+        "saveReopen": false
+      }
+    },
+    {
+      "id": "even-mode",
+      "file": "parameter-matrix/even-mode.glyphs",
+      "fontParameters": [{"name": "IconGrid.gridMode", "value": "even", "active": true}],
+      "masterParameters": {
+        "regular": [{"name": "IconGrid.gridSize", "value": 40, "active": true}]
+      },
+      "effective": {
+        "regular": {"grid_size": 40, "grid_mode": "even"}
+      },
+      "warningsContain": [],
+      "mutation": {
+        "scope": "font",
+        "changes": {"IconGrid.gridMode": "odd"},
+        "saveReopen": false
+      }
+    },
+    {
+      "id": "invalid-inactive-duplicates",
+      "file": "parameter-matrix/invalid-inactive-duplicates.glyphs",
+      "fontParameters": [
+        {"name": "IconGrid.columns", "value": "invalid", "active": true},
+        {"name": "IconGrid.rows", "value": 99, "active": false},
+        {"name": "IconGrid.opacity", "value": 0.2, "active": true},
+        {"name": "IconGrid.opacity", "value": 0.6, "active": true}
+      ],
+      "masterParameters": {
+        "regular": [
+          {"name": "IconGrid.gridSize", "value": 34, "active": true},
+          {"name": "IconGrid.gridSize", "value": 36, "active": true},
+          {"name": "IconGrid.gridMode", "value": "even", "active": false}
+        ]
+      },
+      "effective": {
+        "regular": {
+          "columns": 24,
+          "rows": 24,
+          "grid_size": 36,
+          "grid_mode": "odd",
+          "opacity": 0.6
+        }
+      },
+      "warningsContain": [
+        "font has duplicate active parameter IconGrid.opacity",
+        "master has duplicate active parameter IconGrid.gridSize",
+        "Ignoring invalid font value for IconGrid.columns"
+      ],
+      "mutation": {
+        "scope": "master",
+        "master": "regular",
+        "changes": {"IconGrid.gridSize": 38},
+        "expectedBlocker": "duplicate",
+        "saveReopen": false
+      }
+    }
+  ]
+}

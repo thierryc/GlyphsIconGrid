@@ -8,13 +8,19 @@ from AppKit import NSBezierPath, NSClassFromString, NSColor, NSMakeRect
 from GlyphsApp import Glyphs, MOUSEMOVED
 from GlyphsApp.plugins import ReporterPlugin
 
-from icon_grid.config import resolve_config
-from icon_grid.geometry import build_geometry, hit_test_guides, line_width_for_scale
-from icon_grid.runtime import (
+from glyphs_icon_grid.config import resolve_config
+from glyphs_icon_grid.geometry import build_geometry, hit_test_guides, line_width_for_scale
+from glyphs_icon_grid.runtime import (
+	active_mouse_context,
 	parameter_entries,
 	resolve_layer_context,
-	resolve_mouse_context,
+	selected_node_records,
 	tool_allows_drawing,
+	tool_creation_drag_point,
+	tool_drag_session,
+	tool_is_annotation,
+	tool_is_drawing,
+	tool_uses_creation_hover,
 )
 
 
@@ -124,30 +130,98 @@ def _stroke(path, color, opacity, screen_pixels, scale):
 	path.stroke()
 
 
-class GlyphsIconGrid(ReporterPlugin):
+def _controller(plugin):
+	controller = getattr(plugin, "controller", None)
+	try:
+		return controller() if callable(controller) else controller
+	except (AttributeError, TypeError):
+		return None
+
+
+def _alignment_hits(geometry, points, tolerance):
+	hits = []
+	seen = set()
+	for point in points:
+		for reference in hit_test_guides(geometry, point, tolerance):
+			if reference in seen:
+				continue
+			hits.append(reference)
+			seen.add(reference)
+	return tuple(hits)
+
+
+def _same_object(left, right):
+	if left is right:
+		return True
+	try:
+		return bool(left == right)
+	except Exception:
+		return False
+
+
+class GlyphsIconGridReporter(ReporterPlugin):
 
 	@objc.python_method
 	def settings(self):
 		self.menuName = Glyphs.localize({"en": "Icon Grid"})
 		self._warned_messages = set()
-		self._mouse_callback = None
-		self._hover_layer = None
-		self._hover_point = None
-		self._hover_hits = ()
+		self._alignment_layer = None
+		self._alignment_idle_nodes = {}
+		self._alignment_drag_nodes = {}
+		self._alignment_moving_nodes = set()
+		self._alignment_drag_session = None
+		self._creation_hover_layer = None
+		self._creation_hover_point = None
+		self._creation_hover_callback_registered = False
 
 	def willActivate(self):
-		if self._mouse_callback is not None:
+		if self._creation_hover_callback_registered:
 			return
-		self._mouse_callback = self._mouse_moved
-		Glyphs.addCallback(self._mouse_callback, MOUSEMOVED)
+		Glyphs.addCallback(self._mouse_moved, MOUSEMOVED)
+		self._creation_hover_callback_registered = True
 
 	def willDeactivate(self):
-		if self._mouse_callback is not None:
-			Glyphs.removeCallback(self._mouse_callback, MOUSEMOVED)
-			self._mouse_callback = None
-		self._hover_layer = None
-		self._hover_point = None
-		self._hover_hits = ()
+		if self._creation_hover_callback_registered:
+			Glyphs.removeCallback(self._mouse_moved, MOUSEMOVED)
+		self._creation_hover_callback_registered = False
+		self._creation_hover_layer = None
+		self._creation_hover_point = None
+
+	@objc.python_method
+	def __del__(self):
+		try:
+			if getattr(self, "_creation_hover_callback_registered", False):
+				Glyphs.removeCallback(self._mouse_moved, MOUSEMOVED)
+		except Exception:
+			pass
+
+	@objc.python_method
+	def _mouse_moved(self, notification):
+		controller = _controller(self)
+		if not tool_uses_creation_hover(controller, NSClassFromString):
+			had_hover = self._creation_hover_point is not None
+			self._creation_hover_layer = None
+			self._creation_hover_point = None
+			if had_hover:
+				Glyphs.redraw()
+			return
+
+		context = active_mouse_context(controller, notification)
+		if context is None:
+			if self._creation_hover_point is None:
+				return
+			self._creation_hover_layer = None
+			self._creation_hover_point = None
+		else:
+			layer, point = context
+			if (
+				_same_object(layer, self._creation_hover_layer)
+				and point == self._creation_hover_point
+			):
+				return
+			self._creation_hover_layer = layer
+			self._creation_hover_point = point
+		Glyphs.redraw()
 
 	@objc.python_method
 	def _warn_once(self, message):
@@ -170,6 +244,9 @@ class GlyphsIconGrid(ReporterPlugin):
 			parameter_entries(context.master),
 			getattr(context.master, "capHeight", None),
 			getattr(context.font, "upm", None),
+			master_x_height=getattr(context.master, "xHeight", None),
+			master_ascender=getattr(context.master, "ascender", None),
+			master_descender=getattr(context.master, "descender", None),
 		)
 		for warning in warnings:
 			self._warn_once(warning)
@@ -179,44 +256,82 @@ class GlyphsIconGrid(ReporterPlugin):
 		return config, geometry
 
 	@objc.python_method
-	def _set_hover(self, layer, point, hits):
-		visual_change = hits != self._hover_hits or (
-			bool(hits) and layer is not self._hover_layer
-		)
-		self._hover_layer = layer
-		self._hover_point = point
-		self._hover_hits = hits
-		if visual_change:
-			Glyphs.redraw()
+	def _moving_node_points(self, layer, controller):
+		"""Track real node edits without observing passive pointer movement."""
 
-	@objc.python_method
-	def _mouse_moved(self, _notification):
-		event_getter = getattr(Glyphs, "currentEvent", None)
-		event = event_getter() if callable(event_getter) else None
-		mouse = resolve_mouse_context(getattr(self, "controller", None), event)
-		if mouse is None or not tool_allows_drawing(
-			getattr(self, "controller", None), NSClassFromString
-		):
-			self._set_hover(None, None, ())
-			return
+		current = dict(selected_node_records(layer, NSClassFromString))
+		if tool_is_annotation(controller, NSClassFromString):
+			self._alignment_layer = layer
+			self._alignment_idle_nodes = current
+			self._alignment_drag_nodes = {}
+			self._alignment_moving_nodes = set()
+			self._alignment_drag_session = None
+			return ()
+		drag_session = tool_drag_session(controller)
+		dragging = drag_session is not None
 
-		resolved = self._geometry_for_layer(mouse.layer)
-		if resolved is None:
-			self._set_hover(None, None, ())
-			return
-		config, geometry = resolved
-		hits = ()
-		if config.hover_highlight:
-			hits = hit_test_guides(
-				geometry,
-				mouse.point,
-				config.hover_tolerance / mouse.scale,
+		if layer != self._alignment_layer:
+			self._alignment_layer = layer
+			self._alignment_idle_nodes = {} if dragging else current
+			self._alignment_drag_nodes = {}
+			self._alignment_moving_nodes = set()
+			self._alignment_drag_session = None
+
+		if not dragging:
+			self._alignment_idle_nodes = current
+			self._alignment_drag_nodes = {}
+			self._alignment_moving_nodes = set()
+			self._alignment_drag_session = None
+			return ()
+
+		if drag_session != self._alignment_drag_session:
+			if self._alignment_drag_session is not None:
+				self._alignment_idle_nodes = self._alignment_drag_nodes
+			self._alignment_drag_nodes = {}
+			self._alignment_moving_nodes = set()
+			self._alignment_drag_session = drag_session
+
+		moved_from_idle = {
+			node
+			for node, point in current.items()
+			if (
+			node in self._alignment_idle_nodes
+			and self._alignment_idle_nodes[node] != point
 			)
-		self._set_hover(mouse.layer, mouse.point, hits)
+		}
+		moved_during_drag = {
+			node
+			for node, point in current.items()
+			if (
+			node in self._alignment_drag_nodes
+			and self._alignment_drag_nodes[node] != point
+			)
+		}
+		added_by_draw_tool = set()
+		if tool_is_drawing(controller, NSClassFromString):
+			added_by_draw_tool = {
+				node for node in current if node not in self._alignment_idle_nodes
+			}
+
+		self._alignment_moving_nodes.update(
+			moved_from_idle | moved_during_drag | added_by_draw_tool
+		)
+		self._alignment_drag_nodes = current
+
+		if not self._alignment_moving_nodes:
+			return ()
+		return tuple(
+			dict.fromkeys(
+				point
+				for node, point in current.items()
+				if node in self._alignment_moving_nodes
+			)
+		)
 
 	@objc.python_method
 	def background(self, layer):
-		if not tool_allows_drawing(getattr(self, "controller", None), NSClassFromString):
+		controller = _controller(self)
+		if not tool_allows_drawing(controller, NSClassFromString):
 			return None
 		resolved = self._geometry_for_layer(layer)
 		if resolved is None:
@@ -240,24 +355,40 @@ class GlyphsIconGrid(ReporterPlugin):
 		if geometry.keylines:
 			_stroke(_keyline_path(geometry.keylines), color, config.opacity * 0.9, 1.0, scale)
 
-		hover_hits = ()
-		if (
-			config.hover_highlight
-			and self._hover_layer is layer
-			and self._hover_point is not None
-		):
-			hover_hits = hit_test_guides(
-				geometry,
-				self._hover_point,
-				config.hover_tolerance / scale,
+		moving_node_points = self._moving_node_points(layer, controller)
+		alignment_points = moving_node_points
+		active_drag = tool_drag_session(controller) is not None
+		if active_drag and tool_uses_creation_hover(controller, NSClassFromString):
+			self._creation_hover_layer = None
+			self._creation_hover_point = None
+		if not alignment_points:
+			creation_point = tool_creation_drag_point(
+				controller,
+				NSClassFromString,
 			)
-			self._hover_hits = hover_hits
-		if hover_hits:
+			if creation_point is not None:
+				alignment_points = (creation_point,)
+		if (
+			not alignment_points
+			and not active_drag
+			and tool_uses_creation_hover(controller, NSClassFromString)
+			and self._creation_hover_point is not None
+			and _same_object(layer, self._creation_hover_layer)
+		):
+			alignment_points = (self._creation_hover_point,)
+		alignment_hits = ()
+		if config.alignment_highlight and alignment_points:
+			alignment_hits = _alignment_hits(
+				geometry,
+				alignment_points,
+				config.alignment_tolerance / scale,
+			)
+		if alignment_hits:
 			_stroke(
-				_highlight_path(geometry, hover_hits),
+				_highlight_path(geometry, alignment_hits),
 				color,
-				min(1.0, config.opacity * 2.5),
-				2.0,
+				min(1.0, config.opacity * 1.6),
+				1.4,
 				scale,
 			)
 		return None

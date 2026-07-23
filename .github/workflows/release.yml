@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - run: python -m unittest discover -v
+      - run: python -m compileall -q IconGrid.glyphsReporter tests scripts
+      - run: python scripts/validate.py IconGrid.glyphsReporter --target both
+      - run: python scripts/package.py
+      - run: python scripts/release_check.py --tag "${GITHUB_REF_NAME}" --require-artifacts
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${GITHUB_REF_NAME}"
+          "dist/GlyphsIconGrid-${GITHUB_REF_NAME#v}.zip"
+          "dist/GlyphsIconGrid-${GITHUB_REF_NAME#v}.zip.sha256"
+          --verify-tag
+          --title "GlyphsIconGrid ${GITHUB_REF_NAME#v}"
+          --notes-file "docs/releases/${GITHUB_REF_NAME#v}.md"

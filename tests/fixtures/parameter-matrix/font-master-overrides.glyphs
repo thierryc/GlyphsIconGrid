@@ -1,0 +1,109 @@
+{
+.appVersion = "3877";
+.formatVersion = 3;
+customParameters = (
+{
+name = IconGrid.columns;
+value = 20;
+},
+{
+name = IconGrid.rows;
+value = 22;
+},
+{
+name = IconGrid.gridMode;
+value = even;
+},
+{
+name = IconGrid.width;
+value = 960;
+},
+{
+name = IconGrid.height;
+value = 980;
+},
+{
+name = IconGrid.origin;
+value = center;
+},
+{
+name = IconGrid.baselineOffset;
+value = 12;
+},
+{
+name = IconGrid.padding;
+value = 1.5;
+},
+{
+name = IconGrid.majorEvery;
+value = 5;
+},
+{
+name = IconGrid.rings;
+value = 8;
+},
+{
+name = IconGrid.spokes;
+value = 12;
+},
+{
+name = IconGrid.showKeylines;
+value = 0;
+},
+{
+name = IconGrid.color;
+value = "#FF6600";
+},
+{
+name = IconGrid.opacity;
+value = 0.45;
+},
+{
+name = IconGrid.alignmentHighlight;
+value = 1;
+},
+{
+name = IconGrid.alignmentTolerance;
+value = 4;
+}
+);
+familyName = "IconGrid Matrix Font and Master";
+fontMaster = (
+{
+customParameters = (
+{
+name = IconGrid.gridSize;
+value = 34;
+},
+{
+name = IconGrid.gridMode;
+value = odd;
+}
+);
+id = regular;
+metricValues = ({pos = 800;},{pos = 700;},{pos = 500;},{},{pos = -200;});
+name = Regular;
+},
+{
+customParameters = (
+{
+name = IconGrid.gridSize;
+value = 72;
+}
+);
+id = bold;
+metricValues = ({pos = 800;},{pos = 700;},{pos = 500;},{},{pos = -200;});
+name = Bold;
+}
+);
+glyphs = (
+{
+glyphname = test;
+layers = ({layerId = regular;width = 1000;},{layerId = bold;width = 1000;});
+}
+);
+metrics = ({type = ascender;},{type = "cap height";},{type = "x-height";},{type = baseline;},{type = descender;});
+unitsPerEm = 1000;
+versionMajor = 1;
+versionMinor = 0;
+}

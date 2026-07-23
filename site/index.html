@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A weight-aware icon construction grid for Glyphs 3 and Glyphs 4.">
+  <meta name="theme-color" content="#0a84ff">
+  <meta property="og:title" content="GlyphsIconGrid">
+  <meta property="og:description" content="Weight-aware square grids, circular guides, spokes, and keylines in Glyphs.">
+  <meta property="og:image" content="https://thierryc.github.io/GlyphsIconGrid/assets/images/icon-grid-overview.png">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://thierryc.github.io/GlyphsIconGrid/">
+  <title>GlyphsIconGrid — construction grids for Glyphs</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="site.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="GlyphsIconGrid home">
+      <span class="brand-mark" aria-hidden="true"></span>
+      GlyphsIconGrid
+    </a>
+    <nav aria-label="Primary">
+      <a href="#install">Install</a>
+      <a href="#configure">Configure</a>
+      <a href="#mcp">AI + MCP</a>
+      <a href="https://github.com/thierryc/GlyphsIconGrid">GitHub</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-copy">
+        <p class="eyebrow">Reporter plug-in · Glyphs 3.5 and 4</p>
+        <h1>A construction grid that follows the weight of your icons.</h1>
+        <p class="lede">Draw with square cells, concentric circles, spokes, and keylines. Set one construction unit per master and keep the rest simple.</p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/thierryc/GlyphsIconGrid/releases/latest">Download v0.1.0</a>
+          <a class="button secondary" href="#install">Set it up</a>
+        </div>
+        <p class="quiet">Apache-2.0 · No outlines changed · No implicit save</p>
+      </div>
+      <figure class="hero-shot">
+        <img src="assets/images/icon-grid-overview.png" width="1800" height="1170" alt="Glyphs 4 Edit view showing an odd, cell-centered Icon Grid behind a lightbulb icon.">
+      </figure>
+    </section>
+
+    <section class="section" id="install">
+      <div class="section-heading">
+        <p class="eyebrow">Manual setup</p>
+        <h2>For people using Glyphs</h2>
+        <p>Download the release, unzip it, and double-click <code>IconGrid.glyphsReporter</code>. Restart Glyphs, open a glyph in Edit view, then choose <strong>View → Show Icon Grid</strong>. To update, install the newer bundle and restart; to uninstall, remove Icon Grid from Glyphs’ plug-in folder and restart.</p>
+      </div>
+      <div class="shot-grid two">
+        <figure class="shot-card">
+          <img src="assets/images/show-icon-grid-menu.png" width="1200" height="800" alt="Glyphs View menu with Show Icon Grid enabled.">
+          <figcaption>One menu command shows or hides the reporter.</figcaption>
+        </figure>
+        <figure class="shot-card">
+          <img src="assets/images/font-info-grid-size.png" width="1200" height="800" alt="Glyphs Font Info showing IconGrid.gridSize on the Regular and Bold masters.">
+          <figcaption>Keep master settings minimal: one construction unit per weight.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section split" id="configure">
+      <div>
+        <p class="eyebrow">Recommended setup · 1000 UPM</p>
+        <h2>34 for Regular. 72 for Bold.</h2>
+        <p><code>IconGrid.gridSize</code> controls both square-cell size and the distance between concentric circles. Put it on each master, not at font scope, when the construction unit changes with weight.</p>
+        <div class="master-values" aria-label="Recommended master values">
+          <div aria-label="Regular · 34 font units"><span>Regular</span><strong>34</strong><small>font units</small></div>
+          <div aria-label="Bold · 72 font units"><span>Bold</span><strong>72</strong><small>font units</small></div>
+        </div>
+      </div>
+      <figure class="shot-card">
+        <img src="assets/images/regular-bold-grid.png" width="1600" height="900" alt="Side-by-side Regular and Bold Glyphs masters using 34-unit and 72-unit construction grids.">
+        <figcaption>The same icon system adapts to the active master.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section phase-section">
+      <div class="section-heading">
+        <p class="eyebrow">Grid phase</p>
+        <h2>Odd is the default</h2>
+        <p>In <strong>odd</strong> mode, one complete cell is centered on the horizontal and vertical construction axes. Use <strong>even</strong> only when grid borders must coincide with both axes.</p>
+      </div>
+      <figure class="shot-card wide">
+        <img src="assets/images/odd-even-grid.png" width="1600" height="900" alt="Comparison of odd mode with a centered cell and even mode with grid lines on the construction axes.">
+        <figcaption>Odd: axes bisect a central cell. Even: axes coincide with grid lines.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section" aria-labelledby="options-title">
+      <div class="section-heading">
+        <p class="eyebrow">Options</p>
+        <h2 id="options-title">Master override, font fallback, built-in default</h2>
+        <p>Each setting resolves independently. A valid active-master value wins, then a valid font value, then the built-in default. Disabled or invalid values fall through safely.</p>
+      </div>
+      <div class="option-grid">
+        <article><h3>Geometry</h3><p><code>gridSize</code>, <code>gridMode</code>, width, height, columns, rows, origin, and baseline offset.</p></article>
+        <article><h3>Guides</h3><p>Padding, major-line cadence, rings, spokes, and common icon keylines.</p></article>
+        <article><h3>Appearance</h3><p>Color and opacity, with a blue default that stays distinct from Glyphs guides.</p></article>
+        <article><h3>Alignment cue</h3><p>A strict visual highlight near guides while drawing or moving nodes. It never snaps.</p></article>
+      </div>
+      <p class="centered-link"><a href="https://github.com/thierryc/GlyphsIconGrid/blob/main/docs/PARAMETERS.md">Read the complete 17-parameter reference →</a></p>
+    </section>
+
+    <section class="section mcp-section" id="mcp">
+      <div class="section-heading">
+        <p class="eyebrow">Glyphs MCP</p>
+        <h2>Inspect and change a font with your local AI client</h2>
+        <p>Start Glyphs MCP with the <strong>Edit</strong> profile, connect to <code>http://127.0.0.1:9680/mcp/</code>, and install this repository’s Icon Grid skill. The skill identifies the font, previews changes, applies only confirmed values, reads them back, and leaves the font unsaved.</p>
+      </div>
+      <div class="shot-grid two">
+        <figure class="shot-card">
+          <img src="assets/images/glyphs-mcp-edit-profile.png" width="1200" height="800" alt="Glyphs MCP Server Status window with the Edit tool profile selected.">
+          <figcaption>Use the local Edit profile for guarded parameter mutation.</figcaption>
+        </figure>
+        <div class="terminal-card" aria-label="Example AI request">
+          <div class="terminal-top"><span></span><span></span><span></span></div>
+          <p>Use <code>$glyphs-mcp-icon-grid</code> on the open 1000-UPM icon font.</p>
+          <p>Leave font scope empty. Preview and set:</p>
+          <pre><code>Regular  IconGrid.gridSize = 34
+Bold     IconGrid.gridSize = 72</code></pre>
+          <p>Read both masters back. Do not save.</p>
+        </div>
+      </div>
+
+      <div class="client-tabs" data-tabs>
+        <div class="tab-list" role="tablist" aria-label="AI client setup">
+          <button role="tab" aria-selected="true" aria-controls="codex-panel" id="codex-tab">Codex</button>
+          <button role="tab" aria-selected="false" aria-controls="claude-panel" id="claude-tab" tabindex="-1">Claude</button>
+          <button role="tab" aria-selected="false" aria-controls="gemini-panel" id="gemini-tab" tabindex="-1">Gemini</button>
+          <button role="tab" aria-selected="false" aria-controls="cursor-panel" id="cursor-tab" tabindex="-1">Cursor</button>
+        </div>
+        <section role="tabpanel" id="codex-panel" aria-labelledby="codex-tab">
+          <p>Install the skill in <code>~/.agents/skills</code>, then add the MCP server to <code>~/.codex/config.toml</code>.</p>
+          <pre><code>python3 scripts/install_skill.py --client codex --scope user
+
+[mcp_servers.glyphs-mcp]
+url = "http://127.0.0.1:9680/mcp/"</code></pre>
+        </section>
+        <section role="tabpanel" id="claude-panel" aria-labelledby="claude-tab" hidden>
+          <p>Claude Code loads personal skills from <code>~/.claude/skills</code>.</p>
+          <pre><code>python3 scripts/install_skill.py --client claude --scope user
+claude mcp add --scope user --transport http glyphs-mcp \
+  http://127.0.0.1:9680/mcp/</code></pre>
+        </section>
+        <section role="tabpanel" id="gemini-panel" aria-labelledby="gemini-tab" hidden>
+          <p>Gemini CLI can share the open <code>~/.agents/skills</code> convention. Add <code>httpUrl</code> under <code>mcpServers</code> in <code>~/.gemini/settings.json</code>.</p>
+          <pre><code>python3 scripts/install_skill.py --client gemini --scope user
+
+"glyphs-mcp": {
+  "httpUrl": "http://127.0.0.1:9680/mcp/"
+}</code></pre>
+        </section>
+        <section role="tabpanel" id="cursor-panel" aria-labelledby="cursor-tab" hidden>
+          <p>Cursor can load the shared skill location. Put the Streamable HTTP server in <code>~/.cursor/mcp.json</code>.</p>
+          <pre><code>python3 scripts/install_skill.py --client cursor --scope user
+
+"glyphs-mcp": {
+  "url": "http://127.0.0.1:9680/mcp/"
+}</code></pre>
+        </section>
+      </div>
+      <p class="notice">The MCP endpoint is local to your Mac. A browser-only AI session normally cannot reach <code>127.0.0.1</code>.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>GlyphsIconGrid by Thierry Charbonnel · <a href="https://github.com/thierryc/GlyphsIconGrid">Source</a> · <a href="https://github.com/thierryc/GlyphsIconGrid/blob/main/LICENSE">Apache-2.0</a></p>
+  </footer>
+</body>
+</html>

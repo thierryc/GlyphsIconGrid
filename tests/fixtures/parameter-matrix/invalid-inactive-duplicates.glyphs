@@ -1,0 +1,56 @@
+{
+.appVersion = "3877";
+.formatVersion = 3;
+customParameters = (
+{
+name = IconGrid.columns;
+value = invalid;
+},
+{
+disabled = 1;
+name = IconGrid.rows;
+value = 99;
+},
+{
+name = IconGrid.opacity;
+value = 0.2;
+},
+{
+name = IconGrid.opacity;
+value = 0.6;
+}
+);
+familyName = "IconGrid Matrix Guardrails";
+fontMaster = (
+{
+customParameters = (
+{
+name = IconGrid.gridSize;
+value = 34;
+},
+{
+name = IconGrid.gridSize;
+value = 36;
+},
+{
+disabled = 1;
+name = IconGrid.gridMode;
+value = even;
+}
+);
+id = regular;
+metricValues = ({pos = 800;},{pos = 700;},{pos = 500;},{},{pos = -200;});
+name = Regular;
+}
+);
+glyphs = (
+{
+glyphname = test;
+layers = ({layerId = regular;width = 1000;});
+}
+);
+metrics = ({type = ascender;},{type = "cap height";},{type = "x-height";},{type = baseline;},{type = descender;});
+unitsPerEm = 1000;
+versionMajor = 1;
+versionMinor = 0;
+}

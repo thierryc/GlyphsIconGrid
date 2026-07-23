@@ -1,0 +1,12 @@
+interface:
+  display_name: "Glyphs MCP Icon Grid"
+  short_description: "Configure IconGrid through Glyphs MCP"
+  default_prompt: "Use $glyphs-mcp-icon-grid to inspect and configure IconGrid custom parameters in the active Glyphs font."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "glyphs_mcp_server"
+      description: "Local Glyphs MCP server with generic custom-parameter tools"
+      transport: "streamable_http"
+      url: "http://127.0.0.1:9680/mcp/"

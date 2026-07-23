@@ -19,7 +19,11 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright, Thierry Charbonnel, 2026</string>
 	<key>NSPrincipalClass</key>
-	<string>GlyphsIconGrid</string>
+	<string>GlyphsIconGridReporter</string>
+	<key>UpdateFeedURL</key>
+	<string>https://thierryc.github.io/GlyphsIconGrid/update/Info.plist</string>
+	<key>productPageURL</key>
+	<string>https://thierryc.github.io/GlyphsIconGrid/</string>
 	<key>PyMainFileNames</key>
 	<array>
 		<string>plugin.py</string>
