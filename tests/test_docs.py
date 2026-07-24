@@ -87,6 +87,20 @@ class DocumentationTests(unittest.TestCase):
             source_path = re.search(r'src="([^"]+)"', tag).group(1)
             self.assertTrue(os.path.isfile(os.path.join(output, source_path)))
 
+    def test_site_screenshots_preserve_their_intrinsic_aspect_ratio(self):
+        stylesheet = os.path.join(ROOT, "site", "styles.css")
+        with open(stylesheet, "r", encoding="utf-8") as handle:
+            source = handle.read()
+        rule = re.search(r"\.shot-card img\s*\{([^}]+)\}", source).group(1)
+        declarations = dict(
+            declaration.strip().split(":", 1)
+            for declaration in rule.split(";")
+            if ":" in declaration
+        )
+        self.assertEqual(declarations["width"].strip(), "auto")
+        self.assertEqual(declarations["max-width"].strip(), "100%")
+        self.assertEqual(declarations["height"].strip(), "auto")
+
 
 if __name__ == "__main__":
     unittest.main()
