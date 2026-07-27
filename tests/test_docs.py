@@ -145,6 +145,11 @@ class DocumentationTests(unittest.TestCase):
             self.assertRegex(tag, r'alt="[^"]+"')
             source_path = re.search(r'src="([^"]+)"', tag).group(1)
             self.assertTrue(os.path.isfile(os.path.join(output, source_path)))
+        output_images = os.path.join(output, "assets", "images")
+        self.assertEqual(
+            set(os.listdir(output_images)),
+            set(build_site.REQUIRED_IMAGES),
+        )
 
     def test_site_screenshots_preserve_their_intrinsic_aspect_ratio(self):
         stylesheet = os.path.join(ROOT, "site", "styles.css")

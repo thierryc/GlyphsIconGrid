@@ -31,7 +31,11 @@ def main():
     if os.path.isdir(OUTPUT):
         shutil.rmtree(OUTPUT)
     os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
-    shutil.copytree(SOURCE, OUTPUT)
+    shutil.copytree(
+        SOURCE,
+        OUTPUT,
+        ignore=shutil.ignore_patterns("assets"),
+    )
     destination = os.path.join(OUTPUT, "assets", "images")
     os.makedirs(destination, exist_ok=True)
     for name in REQUIRED_IMAGES:
