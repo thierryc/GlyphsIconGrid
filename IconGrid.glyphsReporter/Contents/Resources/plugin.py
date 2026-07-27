@@ -13,6 +13,7 @@ from glyphs_icon_grid.geometry import build_geometry, hit_test_guides, line_widt
 from glyphs_icon_grid.runtime import (
 	active_mouse_context,
 	parameter_entries,
+	preferred_master_stem,
 	resolve_layer_context,
 	selected_node_records,
 	tool_allows_drawing,
@@ -247,6 +248,7 @@ class GlyphsIconGridReporter(ReporterPlugin):
 			master_x_height=getattr(context.master, "xHeight", None),
 			master_ascender=getattr(context.master, "ascender", None),
 			master_descender=getattr(context.master, "descender", None),
+			master_stem=preferred_master_stem(context.font, context.master),
 		)
 		for warning in warnings:
 			self._warn_once(warning)

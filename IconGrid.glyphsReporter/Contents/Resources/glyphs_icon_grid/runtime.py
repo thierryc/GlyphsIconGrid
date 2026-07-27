@@ -34,6 +34,129 @@ def parameter_entries(owner):
     return entries
 
 
+def _stem_number(value):
+    candidates = [value]
+    for attribute in ("value", "position", "width"):
+        try:
+            candidates.append(_object_value(value, attribute))
+        except Exception:
+            continue
+    for candidate in candidates:
+        try:
+            number = float(candidate)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if math.isfinite(number) and number > 0:
+            return number
+    return None
+
+
+def _stem_value(values, definition, index):
+    if values is None:
+        return None
+    names = []
+    for attribute in ("name", "id"):
+        try:
+            key = _object_value(definition, attribute)
+        except Exception:
+            key = None
+        if key is not None:
+            names.append(key)
+    names.extend((index, str(index)))
+    for key in names:
+        try:
+            value = values[key]
+        except (IndexError, KeyError, TypeError, AttributeError):
+            continue
+        number = _stem_number(value)
+        if number is not None:
+            return number
+    return None
+
+
+def _stem_name(definition):
+    try:
+        name = _object_value(definition, "name")
+    except Exception:
+        return ""
+    return str(name or "").strip().lower()
+
+
+def _is_horizontal_stem(definition):
+    try:
+        return bool(_object_value(definition, "horizontal"))
+    except Exception:
+        return False
+
+
+def _is_cap_h_stem(definition):
+    name = _stem_name(definition)
+    if not name:
+        return False
+    words = "".join(character if character.isalnum() else " " for character in name).split()
+    return (
+        "h" in words
+        or "hstem" in words
+        or name.startswith("h stem")
+        or name.startswith("h horizontal")
+        or name.startswith("h vertical")
+    )
+
+
+def _first_legacy_stem(master, attribute):
+    try:
+        values = _object_value(master, attribute)
+        iterator = iter(values)
+    except (AttributeError, TypeError):
+        return None
+    for value in iterator:
+        number = _stem_number(value)
+        if number is not None:
+            return number
+    return None
+
+
+def preferred_master_stem(font, master):
+    """Return the active master's H stem without changing the font.
+
+    Prefer a named capital-H horizontal stem, then a named capital-H vertical
+    stem. If neither exists, use the first horizontal and then vertical value.
+    Legacy stem arrays are accepted as a final compatibility fallback.
+    """
+
+    try:
+        definitions = tuple(_object_value(font, "stems"))
+        values = _object_value(master, "stems")
+    except (AttributeError, TypeError):
+        definitions = ()
+        values = None
+
+    candidates = []
+    for index, definition in enumerate(definitions):
+        number = _stem_value(values, definition, index)
+        if number is None:
+            continue
+        is_horizontal = _is_horizontal_stem(definition)
+        is_cap_h = _is_cap_h_stem(definition)
+        if is_cap_h and is_horizontal:
+            priority = 0
+        elif is_cap_h:
+            priority = 1
+        elif is_horizontal:
+            priority = 2
+        else:
+            priority = 3
+        candidates.append((priority, index, number))
+    if candidates:
+        return min(candidates)[-1]
+
+    for attribute in ("horizontalStems", "verticalStems"):
+        number = _first_legacy_stem(master, attribute)
+        if number is not None:
+            return number
+    return None
+
+
 def resolve_layer_context(layer):
     if layer is None:
         return None

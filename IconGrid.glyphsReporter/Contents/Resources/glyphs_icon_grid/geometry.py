@@ -7,8 +7,9 @@ from collections import namedtuple
 
 
 _EPSILON = 1e-9
-_MIN_GRID_OVERFLOW_CELLS = 1
-_MAX_GRID_OVERFLOW_CELLS = 6
+_MIN_GRID_OVERFLOW_CELLS = 4
+_MAX_GRID_OVERFLOW_CELLS = 8
+_MAX_STEM_SPACED_RING_COUNT = 2
 _MAX_RING_COUNT = 128
 
 
@@ -240,19 +241,31 @@ def build_geometry(width, config):
     horizontal_major = [Line(grid_bounds.xmin, y, grid_bounds.xmax, y) for y in horizontal_major_y]
     horizontal_axes = [Line(grid_bounds.xmin, y, grid_bounds.xmax, y) for y in horizontal_axis_y]
 
-    inset_x = min(config.padding * step_x, grid_width / 2.0)
-    inset_y = min(config.padding * step_y, height / 2.0)
-    live_area = Canvas(
-        canvas.xmin + inset_x,
-        canvas.ymin + inset_y,
-        canvas.xmax - inset_x,
-        canvas.ymax - inset_y,
-    )
+    live_diameter = _finite_positive(getattr(config, "live_diameter", None))
+    if live_diameter is not None:
+        live_diameter = min(live_diameter, grid_width, height)
+        live_area = Canvas(
+            center_x - live_diameter / 2.0,
+            center_y - live_diameter / 2.0,
+            center_x + live_diameter / 2.0,
+            center_y + live_diameter / 2.0,
+        )
+    else:
+        padding = max(0.0, float(getattr(config, "padding", 0.0)))
+        inset_x = min(padding * step_x, grid_width / 2.0)
+        inset_y = min(padding * step_y, height / 2.0)
+        live_area = Canvas(
+            canvas.xmin + inset_x,
+            canvas.ymin + inset_y,
+            canvas.xmax - inset_x,
+            canvas.ymax - inset_y,
+        )
     live_radius = max(0.0, min(live_area.width, live_area.height) / 2.0)
     rings = []
     if grid_size is not None and live_radius > 0:
         ring_count = min(
             _MAX_RING_COUNT,
+            _MAX_STEM_SPACED_RING_COUNT,
             int(math.floor((live_radius + _EPSILON) / grid_size)),
         )
         rings = [

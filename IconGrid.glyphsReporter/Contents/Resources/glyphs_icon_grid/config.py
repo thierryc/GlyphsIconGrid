@@ -49,6 +49,7 @@ DEFAULTS = {
     "baseline_offset": 0.0,
     "padding": 2.0,
     "major_every": 4,
+    "rings": 2,
     "spokes": 8,
     "show_keylines": True,
     "color": DEFAULT_GRID_COLOR,
@@ -63,6 +64,7 @@ MAX_SPOKES = 360
 MIN_ALIGNMENT_TOLERANCE = 1.0
 MAX_ALIGNMENT_TOLERANCE = 20.0
 MAX_AUTOMATIC_METRIC = 1000000.0
+MATERIAL_LANDSCAPE_RATIO = 0.8
 
 
 class GridConfig(object):
@@ -75,6 +77,7 @@ class GridConfig(object):
         "grid_mode",
         "height",
         "width",
+        "live_diameter",
         "origin",
         "baseline_offset",
         "padding",
@@ -98,6 +101,7 @@ class GridConfig(object):
         grid_mode,
         height,
         width,
+        live_diameter,
         origin,
         baseline_offset,
         padding,
@@ -118,6 +122,7 @@ class GridConfig(object):
         self.grid_mode = grid_mode
         self.height = height
         self.width = width
+        self.live_diameter = live_diameter
         self.origin = origin
         self.baseline_offset = baseline_offset
         self.padding = padding
@@ -332,6 +337,14 @@ def _choose(name, parser, master, font, fallback, warnings):
     return fallback
 
 
+def _has_valid_value(name, parser, master, font):
+    key = PREFIX + name
+    for source in (master, font):
+        if key in source and parser(source[key])[0]:
+            return True
+    return False
+
+
 def resolve_config(
     font_parameters,
     master_parameters,
@@ -340,6 +353,7 @@ def resolve_config(
     master_x_height=None,
     master_ascender=None,
     master_descender=None,
+    master_stem=None,
 ):
     """Return ``(GridConfig, warnings)`` using master-over-font precedence."""
 
@@ -355,26 +369,61 @@ def resolve_config(
     height = _choose("height", _positive_number, master, font, square_size, warnings)
     width = _choose("width", _positive_number, master, font, square_size, warnings)
     minimum_grid_size = max(width, height) / float(MAX_DIVISIONS)
+    automatic_grid_size = None
+    uses_explicit_counts = any(
+        (
+            _has_valid_value(
+                "columns", _integer_parser(1, MAX_DIVISIONS), master, font
+            ),
+            _has_valid_value(
+                "rows", _integer_parser(1, MAX_DIVISIONS), master, font
+            ),
+            _has_valid_value(
+                "rings", _integer_parser(0, MAX_RINGS), master, font
+            ),
+        )
+    )
+    bounded_stem = _bounded_metric(master_stem, font_upm, positive=True)
+    stem_ok, resolved_stem, _note = _grid_size_parser(minimum_grid_size)(bounded_stem)
+    if stem_ok and not uses_explicit_counts:
+        automatic_grid_size = resolved_stem
     grid_size = _choose(
         "gridSize",
         _grid_size_parser(minimum_grid_size),
         master,
         font,
-        DEFAULTS["grid_size"],
+        automatic_grid_size,
         warnings,
     )
     grid_mode = _choose(
         "gridMode", _grid_mode, master, font, DEFAULTS["grid_mode"], warnings
     )
     origin = _choose("origin", _origin, master, font, DEFAULTS["origin"], warnings)
-    x_height = _bounded_metric(master_x_height, font_upm, positive=True)
+    cap_height = _bounded_metric(master_cap_height, font_upm, positive=True)
     default_baseline_offset = DEFAULTS["baseline_offset"]
-    if origin == DEFAULTS["origin"] and x_height is not None:
-        default_baseline_offset = (height - x_height) / 2.0
+    if origin == DEFAULTS["origin"] and cap_height is not None:
+        default_baseline_offset = (height - cap_height) / 2.0
     baseline_offset = _choose(
         "baselineOffset", _number, master, font, default_baseline_offset, warnings
     )
-    padding = _choose("padding", _nonnegative_number, master, font, DEFAULTS["padding"], warnings)
+    has_explicit_padding = _has_valid_value(
+        "padding", _nonnegative_number, master, font
+    )
+    padding = _choose(
+        "padding",
+        _nonnegative_number,
+        master,
+        font,
+        DEFAULTS["padding"],
+        warnings,
+    )
+    live_diameter = None
+    if not has_explicit_padding and cap_height is not None:
+        live_diameter = min(
+            width,
+            height,
+            cap_height / MATERIAL_LANDSCAPE_RATIO,
+        )
     major_every = _choose("majorEvery", _integer_parser(0, MAX_DIVISIONS), master, font, DEFAULTS["major_every"], warnings)
     spokes = _choose("spokes", _integer_parser(0, MAX_SPOKES), master, font, DEFAULTS["spokes"], warnings)
     show_keylines = _choose("showKeylines", _boolean, master, font, DEFAULTS["show_keylines"], warnings)
@@ -400,14 +449,26 @@ def resolve_config(
     step_x = grid_size if grid_size is not None else width / float(columns)
     step_y = grid_size if grid_size is not None else height / float(rows)
     usable_cell_span = min(width / step_x, height / step_y)
-    maximum_padding = max(0.0, (usable_cell_span - 1.0) / 2.0)
-    if padding > maximum_padding:
-        warnings.append(
-            "IconGrid.padding clamped from {!r} to {!r}".format(padding, maximum_padding)
-        )
-        padding = maximum_padding
+    if live_diameter is None:
+        maximum_padding = max(0.0, (usable_cell_span - 1.0) / 2.0)
+        if padding > maximum_padding:
+            warnings.append(
+                "IconGrid.padding clamped from {!r} to {!r}".format(padding, maximum_padding)
+            )
+            padding = maximum_padding
 
-    automatic_rings = max(0, int(math.floor(min(columns, rows) / 2.0 - padding)))
+    automatic_rings = min(
+        DEFAULTS["rings"],
+        max(
+            0,
+            int(
+                math.floor(
+                    min(columns, rows) / 2.0
+                    - (padding if live_diameter is None else 0.0)
+                )
+            ),
+        ),
+    )
     rings = _choose("rings", _integer_parser(0, MAX_RINGS), master, font, automatic_rings, warnings)
 
     metric_candidates = (
@@ -425,6 +486,7 @@ def resolve_config(
         grid_mode=grid_mode,
         height=height,
         width=width,
+        live_diameter=live_diameter,
         origin=origin,
         baseline_offset=baseline_offset,
         padding=padding,
