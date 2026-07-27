@@ -9,7 +9,9 @@ import json
 import os
 import plistlib
 import re
+import stat
 import sys
+import zipfile
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -52,7 +54,7 @@ def validate(tag=None, require_artifacts=False):
         readme = handle.read()
     if version not in changelog:
         errors.append("CHANGELOG.md has no {} section".format(version))
-    if "34" not in readme or "72" not in readme or "odd" not in readme:
+    if "84" not in readme or "135" not in readme or "odd" not in readme:
         errors.append("README.md is missing the recommended grid contract")
     release_notes = os.path.join(ROOT, "docs", "releases", "{}.md".format(version))
     if not os.path.isfile(release_notes):
@@ -72,6 +74,28 @@ def validate(tag=None, require_artifacts=False):
                 recorded = handle.read().split()[0]
             if digest != recorded:
                 errors.append("release checksum does not match archive")
+        if os.path.isfile(archive):
+            required_members = {
+                "IconGrid.glyphsReporter/Contents/Info.plist",
+                "Install GlyphsIconGrid Skill.command",
+                "skills/glyphs-mcp-icon-grid/SKILL.md",
+                "skills/glyphs-mcp-icon-grid/agents/openai.yaml",
+                "skills/glyphs-mcp-icon-grid/references/parameters.md",
+            }
+            with zipfile.ZipFile(archive, "r") as release_zip:
+                names = set(release_zip.namelist())
+                missing = sorted(required_members - names)
+                if missing:
+                    errors.append(
+                        "release archive is missing {}".format(", ".join(missing))
+                    )
+                if "Install GlyphsIconGrid Skill.command" in names:
+                    installer = release_zip.getinfo(
+                        "Install GlyphsIconGrid Skill.command"
+                    )
+                    mode = stat.S_IMODE(installer.external_attr >> 16)
+                    if mode != 0o755:
+                        errors.append("Mac skill installer is not executable")
 
     checks.extend(
         (
@@ -82,7 +106,7 @@ def validate(tag=None, require_artifacts=False):
         )
     )
     if require_artifacts:
-        checks.append("release-artifacts")
+        checks.extend(("release-artifacts", "bundled-skill-installer"))
     return {
         "ok": not errors,
         "version": version,

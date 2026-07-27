@@ -6,6 +6,7 @@ from tests import support  # noqa: F401
 from glyphs_icon_grid.runtime import (
     active_mouse_context,
     parameter_entries,
+    preferred_master_stem,
     resolve_layer_context,
     selected_node_records,
     selected_node_points,
@@ -34,6 +35,13 @@ class Owner(object):
         self.customParameters = parameters or []
 
 
+class StemDefinition(object):
+    def __init__(self, name, horizontal=False, stem_id=None):
+        self.name = name
+        self.horizontal = horizontal
+        self.id = stem_id
+
+
 class RuntimeTests(unittest.TestCase):
     def test_parameter_entries_are_plain_data(self):
         entries = parameter_entries(
@@ -50,6 +58,70 @@ class RuntimeTests(unittest.TestCase):
                 {"name": "IconGrid.rows", "value": 30, "active": False},
             ],
         )
+
+    def test_preferred_master_stem_uses_named_h_horizontal_value(self):
+        font = Owner()
+        font.stems = [
+            StemDefinition("e Horizontal Stem", horizontal=True),
+            StemDefinition("H Vertical Stem"),
+            StemDefinition("H Horizontal Stem", horizontal=True),
+        ]
+        master = Owner()
+        master.stems = {
+            "e Horizontal Stem": 62,
+            "H Vertical Stem": 90,
+            "H Horizontal Stem": 78,
+        }
+        self.assertEqual(preferred_master_stem(font, master), 78.0)
+
+    def test_preferred_master_stem_uses_first_horizontal_then_vertical(self):
+        font = Owner()
+        font.stems = [
+            StemDefinition("Primary Vertical"),
+            StemDefinition("Primary Horizontal", horizontal=True),
+            StemDefinition("Secondary Horizontal", horizontal=True),
+        ]
+        master = Owner()
+        master.stems = [90, 78, 82]
+        self.assertEqual(preferred_master_stem(font, master), 78.0)
+
+        font.stems = [StemDefinition("Primary Vertical")]
+        master.stems = [90]
+        self.assertEqual(preferred_master_stem(font, master), 90.0)
+
+    def test_named_h_vertical_precedes_unrelated_horizontal_stem(self):
+        font = Owner()
+        font.stems = [
+            StemDefinition("e Horizontal Stem", horizontal=True),
+            StemDefinition("H Vertical Stem"),
+        ]
+        master = Owner()
+        master.stems = [62, 90]
+        self.assertEqual(preferred_master_stem(font, master), 90.0)
+
+    def test_preferred_master_stem_supports_id_keys_and_legacy_arrays(self):
+        font = Owner()
+        font.stems = [
+            StemDefinition("H Horizontal Stem", horizontal=True, stem_id="stem-id")
+        ]
+        master = Owner()
+        master.stems = {"stem-id": 84}
+        self.assertEqual(preferred_master_stem(font, master), 84.0)
+
+        legacy_font = Owner()
+        legacy_master = Owner()
+        legacy_master.horizontalStems = [63, 70]
+        legacy_master.verticalStems = [72]
+        self.assertEqual(preferred_master_stem(legacy_font, legacy_master), 63.0)
+
+    def test_preferred_master_stem_ignores_missing_and_invalid_values(self):
+        font = Owner()
+        font.stems = [StemDefinition("H Horizontal Stem", horizontal=True)]
+        for values in ({}, {"H Horizontal Stem": 0}, {"H Horizontal Stem": "bad"}):
+            master = Owner()
+            master.stems = values
+            self.assertIsNone(preferred_master_stem(font, master))
+        self.assertIsNone(preferred_master_stem(Owner(), Owner()))
 
     def test_layer_context_is_safe_for_missing_objects(self):
         self.assertIsNone(resolve_layer_context(None))

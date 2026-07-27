@@ -1,45 +1,131 @@
-# Custom parameter reference
+# Custom parameter guide
 
-Resolution is field-by-field: the active master’s valid `IconGrid.*` value wins, then the font’s valid value, then the documented default. Disabled parameters are ignored. Invalid values fall back safely and emit one deduplicated Macro Panel warning per plug-in session.
+Most users need **no IconGrid custom parameter**. When the active master has stem metrics, the plug-in uses its capital-H horizontal stem as the exact square-cell size and circular-guide spacing. A named H vertical stem is the fallback when no H horizontal stem is available.
 
-| Parameter | Accepted value | Default |
-| --- | --- | --- |
-| `IconGrid.columns` | Integer 1–256 | `24` |
-| `IconGrid.rows` | Integer 1–256 | `24` |
-| `IconGrid.gridSize` | Positive number in font units; must keep each canvas axis within 256 cells | Unset; use the division and ring counts |
-| `IconGrid.gridMode` | `odd` or `even` | `odd` |
-| `IconGrid.height` | Positive number | Font UPM, then active master cap height, then `1000` |
-| `IconGrid.width` | Positive number | Font UPM, then active master cap height, then `1000` |
-| `IconGrid.origin` | One of the nine names below | `bottom-center` |
-| `IconGrid.baselineOffset` | Finite number in font units; positive moves the canvas down | `(height − xHeight) / 2` for the default origin; otherwise `0` |
-| `IconGrid.padding` | Non-negative grid-cell count | `2` |
-| `IconGrid.majorEvery` | Integer 0–256; `0` disables major lines | `4` |
-| `IconGrid.rings` | Integer 0–128 | `floor(min(columns, rows) / 2 − padding)` |
-| `IconGrid.spokes` | Integer 0–360 | `8` |
-| `IconGrid.showKeylines` | Boolean or `on/off`, `yes/no`, `true/false`, `1/0` | `true` |
-| `IconGrid.color` | `accent`, `grid`, `label`, `separator`, or `#RRGGBB` | `#0A84FF` |
-| `IconGrid.opacity` | Number, clamped to 0–1 | `0.28` |
-| `IconGrid.alignmentHighlight` | Boolean or `on/off`, `yes/no`, `true/false`, `1/0` | `true` |
-| `IconGrid.alignmentTolerance` | Number from 1–20, measured in screen points | `2` |
+Leave font scope empty and leave every other `IconGrid.*` parameter unset unless you intentionally want to change a default. The plug-in supplies the canvas size, centering, guides, color, opacity, and alignment behavior automatically.
 
-Supported origins are `bottom-left`, `bottom-center`, `bottom-right`, `center-left`, `center`, `center-right`, `top-left`, `top-center`, and `top-right`.
+For the default Glyphs baseline at `0` and cap height at `700`, the number of stem-sized cells in that span is:
 
-With no size or division overrides, the plug-in uses the font UPM for both dimensions and 24 divisions on each axis. This produces the square construction canvas and square cells expected for icons. Horizontally, `bottom-center` centers the canvas on the glyph advance. Its automatic baseline offset places the canvas center halfway between y=0 and the active master’s x-height. If x-height is unavailable, the safe baseline-offset fallback is `0`. Explicit parameters are preserved and can intentionally create another layout.
+```text
+x = (cap height − baseline) / H stem
+```
 
-A valid `IconGrid.gridSize` is the master’s construction unit. It sets both x/y square-cell spacing and the radial distance between concentric circles. It takes precedence over `IconGrid.columns`, `IconGrid.rows`, and `IconGrid.rings`. Delete it to return to the count-based settings. `IconGrid.padding` remains a count of the effective grid cells.
+`x` is allowed to be fractional so the grid remains an exact match for the weight-specific stem.
 
-Set `IconGrid.gridSize` on each master and leave font scope empty when the built-in appearance and guide defaults are suitable. For a 1000-UPM icon set, use `34` on Regular and `72` on Bold. Scale those values proportionally for another UPM or replace them with the actual construction/stroke unit of each master.
+The live circle and Material keylines use a separate metric-derived size:
 
-`IconGrid.gridMode` controls the grid phase around the canvas center in both directions. The default `odd` mode centers one complete cell on the horizontal and vertical construction axes, so neither axis is itself a grid line. In `even` mode, a vertical and horizontal grid line coincide with the two construction axes. Major-line cadence remains symmetric around the center in both modes. The setting follows the same master-over-font resolution as every other parameter.
+```text
+live diameter = (cap height − baseline) / 0.8
+```
 
-`IconGrid.width` and `IconGrid.height` define a fixed construction canvas. The horizontal part of the origin aligns the canvas to the active layer's advance: `left` puts its left edge at x=0, `center` puts its center at half the advance, and `right` puts its right edge at the advance. The grid is never stretched to match the advance. The vertical part establishes the unshifted anchor; `IconGrid.baselineOffset` then translates the canvas downward. An explicit baseline offset replaces the automatic x-height-centered value.
+At the default 700-unit cap height, the live diameter is 875 units. The landscape keyline is 80% of that diameter, so its lower and upper edges land exactly on the baseline and cap height. Store `IconGrid.padding` only to replace this automatic fit with a cell-based inset.
 
-Grid cadence is measured outwards from the translated canvas center, not from the canvas minimum or y=0. Circular guides use the same center.
+## What should I set?
 
-The background grid extends by the same whole number of cells on all four sides. Under the square defaults, that keeps the background square; explicit non-square dimensions or division counts intentionally remain non-square. The extension targets at least one complete cell past the active master’s cap-height/ascender and descender extents, subject to a six-cell-per-side safety cap. This provides modest room for exceptional artwork above, below, left, or right without filling the Edit view. The canvas and live-area frames, rings, spokes, and keylines remain inside their configured bounds.
+| Goal | Set |
+| --- | --- |
+| Match the grid to each master’s H stem | Define the master stems in Glyphs; set no IconGrid parameter |
+| Override the stem-derived size | `IconGrid.gridSize` on the relevant master |
+| Put grid lines on the horizontal and vertical center axes | `IconGrid.gridMode = even`; otherwise leave the default `odd` |
+| Change appearance or guide visibility | Only the relevant optional parameter below |
+| Build a custom count-based or non-standard canvas | Use the advanced parameters below and leave `gridSize` unset |
 
-`IconGrid.padding` is measured separately in x and y cells. It is clamped before the live area can collapse. Geometry counts are bounded to keep redraw work predictable.
+## Normal setup
 
-The fixed blue default keeps the icon construction grid visually distinct from Glyphs' metric and user guides. Set `IconGrid.color` when a different contrast is needed.
+| Parameter | What it controls | Accepted value | Default |
+| --- | --- | --- | --- |
+| `IconGrid.gridSize` | Explicit square-cell size and circular-guide spacing. It overrides the active master’s H stem. | Positive number in font units; the canvas may not exceed 256 cells on either axis | Active master H stem; otherwise use the count-based defaults |
+| `IconGrid.gridMode` | Grid phase at the canvas center. `odd` centers a complete cell on the axes; `even` places grid lines on the axes. | `odd` or `even` | `odd` |
 
-When alignment highlighting is enabled, Draw, Rectangle/Square, and Circle provide a live hover cue whenever their pointer is within `alignmentTolerance` of a construction guide. During Rectangle or Circle construction, the native preview endpoint takes precedence because the shape's nodes do not exist until mouse-up. Edit behavior is separate: a selected `GSNode` must actually move during a native drag. Pencil contributes its last point only after an active stroke records movement, and Annotation never activates the cue. A lasso, static Edit selection, or passive Edit pointer cannot activate it. The default two-screen-point threshold is intentionally strict, and it is divided by the current zoom scale so it remains constant on screen. At crossings, all matching guides highlight together. Alignment state is temporary and is never written to the font.
+When `gridSize` is valid, it takes precedence over `columns`, `rows`, and `rings`. Those values may remain stored, but they do not control cell or circle spacing until `gridSize` is removed.
+
+Without an explicit `gridSize`, a valid `columns`, `rows`, or `rings` parameter intentionally selects the advanced count-based model and suppresses the automatic stem size.
+
+### Generic 1000-UPM starting scaffold
+
+Use measured master stems whenever possible. For a new icon family, the report’s Regular-relative scaffold provides these starting values:
+
+| Weight | H stem |
+| --- | ---: |
+| Ultralight 100 | `25` |
+| Thin 200 | `42` |
+| Light 300 | `63` |
+| Regular 400 | `84` |
+| Medium 500 | `103` |
+| Semibold 600 | `120` |
+| Bold 700 | `135` |
+| Extrabold 800 | `152` |
+| Black 900 | `174` |
+
+Enter the chosen values under **File → Font Info → Masters → Stems**. They are an empirical first pass, not a substitute for measuring finished outlines.
+
+## Optional guide, appearance, and interaction controls
+
+These settings already have useful defaults. Add only the setting you want to change.
+
+| Parameter | What it controls | Accepted value | Default |
+| --- | --- | --- | --- |
+| `IconGrid.padding` | Explicit inset, measured in effective grid cells, between the construction-canvas edge and the live circle/keyline area. Storing it replaces the automatic metric fit. | Non-negative number of cells | Unstored: live diameter is `(capHeight − baseline) / 0.8`, clamped to the canvas; `2` cells when cap height is unavailable |
+| `IconGrid.majorEvery` | Emphasizes every Nth grid line, counted symmetrically from the center. Set `0` for no major lines. | Integer `0–256` | `4` |
+| `IconGrid.spokes` | Number of radial lines through the circular construction area. Set `0` to hide them. | Integer `0–360` | `8` |
+| `IconGrid.showKeylines` | Shows or hides the circle, square, portrait, and landscape icon keylines. | Boolean or `on/off`, `yes/no`, `true/false`, `1/0` | `true` |
+| `IconGrid.color` | Color of the Icon Grid, kept separate from Glyphs metric and user guides. | `accent`, `grid`, `label`, `separator`, or `#RRGGBB` | `#0A84FF` |
+| `IconGrid.opacity` | Overall visibility of the construction system. `0` is invisible and `1` is fully opaque. | Number, clamped to `0–1` | `0.28` |
+| `IconGrid.alignmentHighlight` | Enables the slightly stronger guide shown near the active drawing point or a node being moved. It does not enable snapping. | Boolean or `on/off`, `yes/no`, `true/false`, `1/0` | `true` |
+| `IconGrid.alignmentTolerance` | Maximum on-screen distance from the active point to a guide before the guide highlights. Smaller values are more precise. | Number `1–20` in screen points | `2` |
+
+## Advanced count-based and canvas controls
+
+You normally do not need these parameters. They remain available for backward compatibility and for layouts that cannot be described by one `gridSize`.
+
+| Parameter | What it controls | Accepted value | Default |
+| --- | --- | --- | --- |
+| `IconGrid.columns` | Number of equal cell divisions across the canvas width **when `gridSize` is unset**. More columns make narrower cells: cell width is `width / columns`. | Integer `1–256` | `24` |
+| `IconGrid.rows` | Number of equal cell divisions across the canvas height **when `gridSize` is unset**. More rows make shorter cells: cell height is `height / rows`. | Integer `1–256` | `24` |
+| `IconGrid.rings` | Number of evenly distributed circular guides **when `gridSize` is unset**. With `gridSize`, up to two complete inner circles are instead spaced by that exact unit. | Integer `0–128` | `2` |
+| `IconGrid.width` | Width of the fixed construction canvas in font units. It is not the glyph advance width. | Positive number | Font UPM, then active-master cap height, then `1000` |
+| `IconGrid.height` | Height of the fixed construction canvas in font units. | Positive number | Font UPM, then active-master cap height, then `1000` |
+| `IconGrid.origin` | How the fixed canvas is anchored horizontally to the glyph advance and vertically before the baseline offset is applied. | One of the nine origin names below | `bottom-center` |
+| `IconGrid.baselineOffset` | Explicit vertical translation of the canvas; positive values move it down. Setting it replaces automatic cap-height centering. | Finite number in font units | `(height − capHeight) / 2` for the default origin when cap height is valid; otherwise `0` |
+
+Supported origins are:
+
+- `bottom-left`, `bottom-center`, `bottom-right`
+- `center-left`, `center`, `center-right`
+- `top-left`, `top-center`, `top-right`
+
+The horizontal part aligns the canvas to the active layer’s advance: `left` puts its left edge at x=0, `center` puts its center at half the advance, and `right` puts its right edge at the advance. The grid is never stretched to match the glyph advance.
+
+Without `gridSize`, square cells require:
+
+```text
+IconGrid.width / IconGrid.columns = IconGrid.height / IconGrid.rows
+```
+
+Leaving all four values unset provides the normal square result automatically.
+
+## Scope and inheritance
+
+Each setting resolves independently:
+
+1. a valid, active value on the current master;
+2. a valid, active value at font scope;
+3. for `gridSize`, the active master’s preferred H stem;
+4. the built-in default.
+
+For a weight-specific construction unit, prefer the master’s native stem metric. Put an explicit `gridSize` on the master only when the icon construction unit intentionally differs. Shared appearance settings such as `color` can be placed at font scope.
+
+Disabled parameters are ignored. Invalid values fall through safely and produce one deduplicated `IconGrid:` warning in the Macro Panel per plug-in session. Duplicate active records are ambiguous: the reporter warns and uses the last value, while the Glyphs MCP parameter tool refuses to modify that name until the duplicate is resolved.
+
+## Behavior that needs no parameter
+
+- The default canvas is one em square and centered horizontally on the glyph advance.
+- Its vertical center is halfway between the baseline and cap height.
+- Its live circle is `capHeight / 0.8` when padding is unstored, so the landscape keyline spans baseline to cap height.
+- The square background grid extends by at least four cells on every side, capped at eight.
+- Stem-sized construction draws at most two inner circles; the circular keyline makes two or three visible circles in typical masters.
+- Draw, Rectangle/Square, and Circle show alignment feedback near guides.
+- Edit highlights only while selected nodes actually move.
+- Pencil highlights only during an active stroke; Annotation never does.
+
+See the [user guide](USER_GUIDE.md) for setup steps, examples, and troubleshooting.

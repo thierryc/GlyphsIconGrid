@@ -1,7 +1,7 @@
 interface:
   display_name: "Glyphs MCP Icon Grid"
-  short_description: "Configure IconGrid through Glyphs MCP"
-  default_prompt: "Use $glyphs-mcp-icon-grid to inspect and configure IconGrid custom parameters in the active Glyphs font."
+  short_description: "Simplify IconGrid through Glyphs MCP"
+  default_prompt: "Use $glyphs-mcp-icon-grid to configure the smallest necessary IconGrid setup, explain any advanced parameter, preview changes, and leave the font unsaved."
 
 dependencies:
   tools:

@@ -9,16 +9,16 @@ GlyphsIconGrid is a no-dialog reporter plug-in that draws an icon construction s
 
 Visit the [GlyphsIconGrid website](https://thierryc.github.io/GlyphsIconGrid/) for the visual setup guide.
 
-![Glyphs 4 Edit view with GlyphsIconGrid’s blue square grid, circular guides, spokes, and keylines behind a lightbulb glyph.](docs/images/icon-grid-overview.png)
+![Glyphs 4 Edit view showing a lightbulb icon over the expanded stem grid and enlarged metric-fitted keylines.](docs/images/icon-grid-overview.png)
 
 ## Features
 
 - A 24 × 24 one-em square construction canvas by default.
-- Horizontal centering on the glyph advance and vertical centering between the baseline and x-height.
-- A compact background grid that overflows the icon square in every direction for exceptional artwork.
+- Horizontal centering on the glyph advance and vertical centering between the baseline and cap height.
+- An expanded background grid that reaches four stem-sized cells beyond the icon square in every direction.
 - A cell-centered `odd` grid by default, with an optional line-centered `even` mode.
-- Padded live area, true circular rings, radial spokes, and Material-derived circle, square, portrait, and landscape keylines.
-- One exact grid size in font units that controls both square cells and circular spacing for each master.
+- Metric-fitted live area, up to two stem-spaced inner circles, radial spokes, and Material-derived circle, square, portrait, and landscape keylines.
+- A weight-aware default that uses the active master’s capital-H stem for both square cells and circular spacing.
 - Blue guides that remain visually distinct from Glyphs metric and user guides.
 - Strict alignment feedback near a guide while drawing, shaping, or moving nodes; it never acts as snapping.
 - Font-level custom parameters with optional per-master overrides.
@@ -34,24 +34,35 @@ The source bundle is validated for Glyphs 3.5 and Glyphs 4. See the [release tes
 
 ## Configure
 
-No font-level parameters are required. For a 1000-UPM icon family, add just one custom parameter to each master in **File → Font Info → Masters → Custom Parameters**:
+No `IconGrid.*` parameter is required when the font has stem metrics:
+
+1. Open **File → Font Info → Masters → Stems**.
+2. Add or verify the capital-H horizontal stem for every master.
+3. Choose **View → Show Icon Grid**.
+
+The reporter prefers a named H horizontal stem, then a named H vertical stem, and follows the selected master automatically. The attached research scaffold gives `84` for Regular and `135` for Bold at 1000 UPM; use measured values when the design already exists.
+
+The grid value is the stem itself. Its relationship to the default Glyphs cap-height span is:
 
 ```text
-Regular master: IconGrid.gridSize = 34
-Bold master:    IconGrid.gridSize = 72
+cap-height cells = (cap height − baseline) / H stem
 ```
 
-`gridSize` controls both the square grid size and the distance between concentric circles. The default `odd` mode centers one grid cell on the construction axes; set `IconGrid.gridMode = even` only when the axes should coincide with grid lines. Other parameters are optional advanced customization.
+With the default 700-unit cap height, the 84-unit Regular stem spans 8.33 cells and the 135-unit Bold stem spans 5.19 cells. Set `IconGrid.gridSize` only when you need an explicit override. The default `odd` mode centers one grid cell on the construction axes; add `IconGrid.gridMode = even` only when the axes should coincide with grid lines.
 
-See the [human user guide](docs/USER_GUIDE.md) for recipes and troubleshooting, and the [complete parameter reference](docs/PARAMETERS.md) for all 17 supported parameters.
+The unstored live/keyline diameter is `cap height / 0.8`: 875 units for the default 700-unit cap height. This makes the Material landscape rectangle run exactly from baseline to cap height. Store `IconGrid.padding` only when you intentionally want a cell-based inset instead.
+
+All other settings are optional. The [plain-language parameter guide](docs/PARAMETERS.md) separates the two normal controls from guide, appearance, and advanced compatibility options. See the [human user guide](docs/USER_GUIDE.md) for recipes and troubleshooting.
 
 ## Glyphs MCP automation
 
-The repository includes the distributable [`glyphs-mcp-icon-grid` skill](skills/glyphs-mcp-icon-grid/SKILL.md). It inspects font and master scopes, validates every `IconGrid.*` value, previews writes, removes redundant settings safely, reads the result back, and never saves the font implicitly.
+Every release includes the distributable [`glyphs-mcp-icon-grid` skill](skills/glyphs-mcp-icon-grid/SKILL.md). It inspects font and master scopes, validates every `IconGrid.*` value, previews writes, removes redundant settings safely, reads the result back, and never saves the font implicitly.
 
 Connect the Glyphs MCP **Edit** profile and verify the target font before changing it. The [Glyphs MCP guide](docs/GLYPHS_MCP.md) covers installation, safe calls, inheritance, and example prompts.
 
-Install the skill for a supported local AI client without changing that client's MCP settings:
+On a Mac, download and unzip the release, then double-click `Install GlyphsIconGrid Skill.command`. Choose the shared location for Codex, Gemini, and Cursor; choose Claude for `~/.claude/skills`; or install both. The installer uses built-in macOS tools, requires no repository checkout or Python installation, and keeps a dated backup before replacing an existing copy.
+
+For a source checkout, the command-line helper remains available:
 
 ```sh
 python3 scripts/install_skill.py --client codex --scope user --dry-run

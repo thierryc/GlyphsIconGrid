@@ -14,8 +14,7 @@ OUTPUT = os.path.join(ROOT, "build", "site")
 REQUIRED_IMAGES = (
     "icon-grid-overview.png",
     "show-icon-grid-menu.png",
-    "font-info-grid-size.png",
-    "regular-bold-grid.png",
+    "default-metrics.png",
     "odd-even-grid.png",
     "glyphs-mcp-edit-profile.png",
 )

@@ -16,15 +16,23 @@ Glyphs 3 and Glyphs 4 may both be open, but their MCP plug-ins share local port 
 
 Do not assume `font_index: 0` when more than one document is open. Font indexes can also change as documents open or close.
 
-## Use the repository skill
+## Install the Icon Grid skill
 
-The skill directory is:
+### From a release on macOS
+
+Download and unzip the GlyphsIconGrid release, then double-click:
 
 ```text
-skills/glyphs-mcp-icon-grid/
+Install GlyphsIconGrid Skill.command
 ```
 
-Keep that directory intact so `SKILL.md`, `agents/openai.yaml`, and `references/parameters.md` remain together. Invoke it as `$glyphs-mcp-icon-grid` when the client supports named skills.
+Choose the shared location for Codex, Gemini, and Cursor; choose Claude for its separate personal skill location; or install both. This installer uses built-in macOS tools and the skill bundled in the release, so it needs neither a repository checkout nor Python. If a previous copy exists, it asks before replacement and moves the existing folder to a dated backup.
+
+Restart the AI client, then invoke the installed skill as `$glyphs-mcp-icon-grid` when the client supports named skills.
+
+### From a source checkout
+
+The canonical source directory is `skills/glyphs-mcp-icon-grid/`. Keep it intact so `SKILL.md`, `agents/openai.yaml`, and `references/parameters.md` remain together.
 
 Preview and install it with the repository helper:
 
@@ -42,7 +50,7 @@ The supported user locations are:
 | Gemini CLI | `~/.agents/skills/glyphs-mcp-icon-grid` | `~/.gemini/settings.json` |
 | Cursor | `~/.agents/skills/glyphs-mcp-icon-grid` | `~/.cursor/mcp.json` |
 
-For project scope, Codex, Gemini, and Cursor use `.agents/skills`; Claude Code uses `.claude/skills`.
+For project scope, Codex, Gemini, and Cursor use `.agents/skills`; Claude Code uses `.claude/skills`. The double-click Mac installer installs only at user scope; use the source helper when project scope is required.
 
 ### MCP client examples
 
@@ -89,12 +97,13 @@ The skill enforces this sequence:
 
 1. verify the server and target font;
 2. resolve the exact master ID when master scope is involved;
-3. read font, master, or effective values, including inactive records;
-4. validate requested values against the [parameter schema](../skills/glyphs-mcp-icon-grid/references/parameters.md);
-5. preview the complete change set with `dry_run: true`;
-6. re-identify the font before mutation;
-7. apply the identical change set only with `dry_run: false` and `confirm: true`;
-8. read the scope back and report `saved: false`.
+3. review the configured and measured H stems for the target masters;
+4. read font, master, or effective values, including inactive records;
+5. validate requested values against the [parameter schema](../skills/glyphs-mcp-icon-grid/references/parameters.md);
+6. preview the complete change set with `dry_run: true`;
+7. re-identify the font before mutation;
+8. apply the identical change set only with `dry_run: false` and `confirm: true`;
+9. read the scope back and report `saved: false`.
 
 The generic MCP calls below can also be used directly.
 
@@ -150,9 +159,22 @@ Read the values that are actually effective after master-over-font inheritance:
 
 Use these objects with `get_custom_parameters`. Reading `font`, `master`, and `effective` separately prevents an inherited value from being mistaken for a stored master override.
 
-## Preview, confirm, and read back
+Review the native Glyphs stem metrics that supply the normal grid default:
 
-Preview the Regular master’s single grid-size parameter with `set_custom_parameters`:
+```json
+{
+  "font_index": 0,
+  "master_ids": ["REGULAR-MASTER-ID", "BOLD-MASTER-ID"],
+  "reference_glyphs": ["H"],
+  "include_measurements": true
+}
+```
+
+Use this object with `review_master_stem_metrics`. Configured H-horizontal values are authoritative; outline measurements are suggestions when a stem is missing.
+
+## Preview an intentional override
+
+When a master needs a construction unit that intentionally differs from its H stem, preview an explicit `gridSize` with `set_custom_parameters`:
 
 ```json
 {
@@ -160,7 +182,7 @@ Preview the Regular master’s single grid-size parameter with `set_custom_param
   "scope": "master",
   "master_id": "REGULAR-MASTER-ID",
   "changes": {
-    "IconGrid.gridSize": 34
+    "IconGrid.gridSize": 96
   },
   "dry_run": true,
   "confirm": false
@@ -173,7 +195,7 @@ To apply, repeat the complete call above with the identical target and `changes`
 
 Then call `get_custom_parameters` again for the written scope. Report the read-back values and `saved: false`. The operation requests a redraw, but saving remains a separate user decision in Glyphs. Call a save tool only when the user explicitly asks to save.
 
-Repeat the same preview/apply/read-back sequence with the Bold master ID and `IconGrid.gridSize: 72`. When changing several masters, preview every batch first. Confirmed master writes happen sequentially and are not a single atomic transaction.
+When changing several masters, preview every batch first. Confirmed master writes happen sequentially and are not a single atomic transaction.
 
 ## Delete a value and restore inheritance
 
@@ -194,7 +216,7 @@ Preview removal of a master override:
 }
 ```
 
-After confirmed deletion, that master inherits `IconGrid.gridSize` from the font. If the font has no active valid record either, the plug-in uses its built-in count-based defaults. Deleting a font record does not remove a master override.
+After confirmed deletion, that master inherits `IconGrid.gridSize` from the font. If the font has no active valid record either, the plug-in uses the active master’s preferred H stem. It uses the built-in count-based defaults only when no usable stem exists. Deleting a font record does not remove a master override.
 
 Use `null` only for an explicitly requested reset or deletion. A missing value is meaningful: do not write every default merely because no record exists.
 
@@ -214,6 +236,6 @@ Use `null` only for an explicitly requested reset or deletion. A missing value i
 Use prompts that identify the target document, scope, and save policy:
 
 - “Use `$glyphs-mcp-icon-grid` to inspect the effective IconGrid settings for the Regular master of `IconGrid-Test.glyphs`. Do not change or save anything.”
-- “For this 1000-UPM icon set, leave font scope empty and set only `IconGrid.gridSize` to `34` on Regular and `72` on Bold. Preview both master batches first, read them back, and do not save the font.”
+- “For this 1000-UPM icon set, review the Regular and Bold H stems and remove redundant `IconGrid.gridSize` overrides so the grid follows each master. Preview deletions first, read everything back, and do not save the font.”
 - “Remove stored IconGrid values that merely repeat plug-in defaults, plus count settings ignored by a master `gridSize`. Preview every deletion and leave the document unsaved.”
 - “Compare font, master, and effective `IconGrid.*` values for every master, including inactive records. Report duplicates or invalid values without fixing them.”

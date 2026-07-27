@@ -13,6 +13,31 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUNDLE_NAME = "IconGrid.glyphsReporter"
 BUNDLE = os.path.join(ROOT, BUNDLE_NAME)
+SKILL = os.path.join(ROOT, "skills", "glyphs-mcp-icon-grid")
+MACOS_SKILL_INSTALLER = os.path.join(
+    ROOT, "scripts", "Install GlyphsIconGrid Skill.command"
+)
+MACOS_SKILL_INSTALLER_NAME = "Install GlyphsIconGrid Skill.command"
+
+
+def _write_file(archive, path, relative):
+    info = zipfile.ZipInfo(relative, date_time=(2026, 1, 1, 0, 0, 0))
+    mode = stat.S_IMODE(os.stat(path).st_mode)
+    info.external_attr = (stat.S_IFREG | mode) << 16
+    with open(path, "rb") as handle:
+        archive.writestr(info, handle.read(), compress_type=zipfile.ZIP_DEFLATED)
+
+
+def _write_tree(archive, source):
+    for directory, subdirectories, filenames in os.walk(source):
+        subdirectories[:] = sorted(
+            name for name in subdirectories if name != "__pycache__"
+        )
+        for filename in sorted(filenames):
+            if filename.endswith((".pyc", ".pyo")):
+                continue
+            path = os.path.join(directory, filename)
+            _write_file(archive, path, os.path.relpath(path, ROOT))
 
 
 def main():
@@ -24,27 +49,16 @@ def main():
     if os.path.exists(output):
         os.unlink(output)
     with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for directory, subdirectories, filenames in os.walk(BUNDLE):
-            subdirectories[:] = sorted(
-                name for name in subdirectories if name != "__pycache__"
-            )
-            for filename in sorted(filenames):
-                if filename.endswith((".pyc", ".pyo")):
-                    continue
-                path = os.path.join(directory, filename)
-                relative = os.path.relpath(path, ROOT)
-                info = zipfile.ZipInfo(relative, date_time=(2026, 1, 1, 0, 0, 0))
-                mode = stat.S_IMODE(os.stat(path).st_mode)
-                info.external_attr = (stat.S_IFREG | mode) << 16
-                with open(path, "rb") as handle:
-                    archive.writestr(info, handle.read(), compress_type=zipfile.ZIP_DEFLATED)
+        _write_tree(archive, BUNDLE)
+        _write_tree(archive, SKILL)
+        _write_file(
+            archive,
+            MACOS_SKILL_INSTALLER,
+            MACOS_SKILL_INSTALLER_NAME,
+        )
         for filename in ("LICENSE", "NOTICE"):
             path = os.path.join(ROOT, filename)
-            info = zipfile.ZipInfo(filename, date_time=(2026, 1, 1, 0, 0, 0))
-            mode = stat.S_IMODE(os.stat(path).st_mode)
-            info.external_attr = (stat.S_IFREG | mode) << 16
-            with open(path, "rb") as handle:
-                archive.writestr(info, handle.read(), compress_type=zipfile.ZIP_DEFLATED)
+            _write_file(archive, path, filename)
     with open(output, "rb") as handle:
         digest = hashlib.sha256(handle.read()).hexdigest()
     checksum = output + ".sha256"

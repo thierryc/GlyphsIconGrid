@@ -51,12 +51,51 @@ class DocumentationTests(unittest.TestCase):
         self.assertEqual(width, 1800)
         self.assertEqual(height, 1170)
 
+    def test_parameter_guide_explains_every_supported_setting(self):
+        path = os.path.join(ROOT, "docs", "PARAMETERS.md")
+        with open(path, "r", encoding="utf-8") as handle:
+            source = handle.read()
+        self.assertIn("Most users need **no IconGrid custom parameter**", source)
+        rows = re.findall(
+            r"\| `(IconGrid\.[A-Za-z]+)` \| ([^|\n]+) \| ([^|\n]+) \| ([^|\n]+) \|",
+            source,
+        )
+        descriptions = {name: description.strip() for name, description, _accepted, _default in rows}
+        self.assertEqual(
+            set(descriptions),
+            {
+                "IconGrid.columns",
+                "IconGrid.rows",
+                "IconGrid.gridSize",
+                "IconGrid.gridMode",
+                "IconGrid.width",
+                "IconGrid.height",
+                "IconGrid.origin",
+                "IconGrid.baselineOffset",
+                "IconGrid.padding",
+                "IconGrid.majorEvery",
+                "IconGrid.rings",
+                "IconGrid.spokes",
+                "IconGrid.showKeylines",
+                "IconGrid.color",
+                "IconGrid.opacity",
+                "IconGrid.alignmentHighlight",
+                "IconGrid.alignmentTolerance",
+            },
+        )
+        self.assertIn("when `gridSize` is unset", descriptions["IconGrid.columns"])
+        self.assertIn("when `gridSize` is unset", descriptions["IconGrid.rows"])
+        self.assertIn("when `gridSize` is unset", descriptions["IconGrid.rings"])
+        self.assertIn("replaces the automatic metric fit", descriptions["IconGrid.padding"])
+        self.assertTrue(all(len(description) >= 20 for description in descriptions.values()))
+
     def test_all_public_screenshots_have_documented_dimensions(self):
         expected = {
             "icon-grid-overview.png": (1800, 1170),
             "show-icon-grid-menu.png": (1200, 800),
             "font-info-grid-size.png": (1200, 800),
             "regular-bold-grid.png": (1600, 900),
+            "default-metrics.png": (1530, 424),
             "odd-even-grid.png": (1600, 900),
             "glyphs-mcp-edit-profile.png": (1200, 800),
         }
@@ -77,11 +116,27 @@ class DocumentationTests(unittest.TestCase):
         self.assertIn('id="install"', source)
         self.assertIn('id="configure"', source)
         self.assertIn('id="mcp"', source)
-        self.assertIn("Regular · 34", source)
-        self.assertIn("Bold · 72", source)
+        self.assertIn("Regular · 84", source)
+        self.assertIn("Bold · 135", source)
+        self.assertIn("875 units at the default cap height", source)
+        self.assertIn("span exactly from baseline to cap height", source)
+        self.assertEqual(source.count('href="https://ap.cx"'), 2)
+        self.assertIn('href="https://ap.cx/tools/glyphs-mcp"', source)
+        self.assertIn(
+            'href="https://github.com/thierryc/Glyphs-mcp"',
+            source,
+        )
+        self.assertIn("Copy this request into your AI app", source)
+        self.assertIn("This is a read-only check", source)
+        self.assertIn("Explain where each value comes from.", source)
+        self.assertGreaterEqual(
+            source.count("Install GlyphsIconGrid Skill.command"),
+            4,
+        )
+        self.assertNotIn("python3 scripts/install_skill.py", source)
         self.assertNotIn("~/.codex/skills", source)
         image_tags = re.findall(r"<img\s+[^>]*>", source)
-        self.assertEqual(len(image_tags), 6)
+        self.assertEqual(len(image_tags), 5)
         for tag in image_tags:
             self.assertRegex(tag, r'alt="[^"]+"')
             source_path = re.search(r'src="([^"]+)"', tag).group(1)
@@ -100,6 +155,36 @@ class DocumentationTests(unittest.TestCase):
         self.assertEqual(declarations["width"].strip(), "auto")
         self.assertEqual(declarations["max-width"].strip(), "100%")
         self.assertEqual(declarations["height"].strip(), "auto")
+
+    def test_site_uses_apcx_page_tokens_and_semantic_key_values(self):
+        stylesheet = os.path.join(ROOT, "site", "styles.css")
+        with open(stylesheet, "r", encoding="utf-8") as handle:
+            styles = handle.read()
+        self.assertIn("--surface: #ffffff", styles)
+        self.assertIn("--surface-2: #f7f7f8", styles)
+        self.assertIn("--text: #111114", styles)
+        self.assertIn("--muted: #5b5b66", styles)
+        self.assertIn("--content-max: clamp(960px, 94vw, 1440px)", styles)
+        self.assertIn("--content-pad: clamp(16px, 2.4vw, 42px)", styles)
+        self.assertIn("--radius: 12px", styles)
+        self.assertIn("font-size: clamp(2.2rem, 4.8vw, 3.8rem)", styles)
+        self.assertIn("font-size: 0.74rem", styles)
+        self.assertIn("font-size: 0.95rem", styles)
+
+        index = os.path.join(ROOT, "site", "index.html")
+        with open(index, "r", encoding="utf-8") as handle:
+            html = handle.read()
+        self.assertRegex(
+            html,
+            re.compile(r'<dl class="hero-meta"[^>]*>.*?<dt>License</dt>', re.S),
+        )
+        self.assertRegex(
+            html,
+            re.compile(
+                r'<dl class="master-values"[^>]*>.*?<dt>Regular</dt>.*?<dd><strong>84</strong>',
+                re.S,
+            ),
+        )
 
 
 if __name__ == "__main__":

@@ -29,8 +29,12 @@ while it is open in Glyphs.
 - [x] Open only disposable copies of the fixture matrix
 - [x] Reporter appears as **View → Show Icon Grid**
 - [x] Show the reporter and confirm a clean redraw
-- [x] Confirm Regular uses 34-unit construction spacing
-- [x] Confirm Bold uses 72-unit construction spacing
+- [x] Confirm Regular inherits its 84-unit H stem as construction spacing
+- [x] Confirm Bold inherits its 135-unit H stem as construction spacing
+- [x] Confirm the vertical center is halfway between baseline and cap height
+- [x] Confirm the automatic live diameter is 875 units and the landscape keyline spans baseline to cap height
+- [x] Confirm the grid extends at least four cells beyond the canvas on every side
+- [x] Confirm at most two inner rings plus the outer circular keyline
 - [x] Read all fixture scopes and effective values through MCP
 - [x] Dry-run, apply, and read back mutations through MCP
 - [x] Preserve inactive and duplicate entries; refuse ambiguous duplicate mutation
@@ -44,21 +48,25 @@ while it is open in Glyphs.
 - [ ] Confirm passive Edit, lasso, Annotation, text, hand, and zoom exclusions live
 - [ ] Inspect the Macro Panel after the complete interaction matrix
 
-## Glyphs 4.0 build 3877
+## Glyphs 4.0 builds 3877–3879
 
 - [x] Record Python runtime, MCP version, and macOS version
 - [x] Open only disposable copies for save/reopen validation
 - [x] Reporter appears as **View → Show Icon Grid**
 - [x] Show and hide the reporter
-- [x] Confirm Regular uses 34-unit construction spacing
-- [x] Confirm Bold uses 72-unit construction spacing
+- [x] Confirm Regular inherits its 84-unit H stem as construction spacing
+- [x] Confirm Bold inherits its 135-unit H stem as construction spacing
+- [x] Confirm the vertical center is halfway between baseline and cap height
+- [x] Confirm the automatic live diameter is 875 units and the landscape keyline spans baseline to cap height
+- [x] Confirm the grid extends at least four cells beyond the canvas on every side
+- [x] Confirm at most two inner rings plus the outer circular keyline
 - [x] Confirm odd/even center phase visually
 - [x] Read all fixture scopes and effective values through MCP
 - [x] Dry-run, apply, and read back mutations through MCP
 - [x] Confirm an MCP parameter edit redraws immediately
 - [x] Preserve inactive and duplicate entries; refuse ambiguous duplicate mutation
 - [x] Explicit save/reopen persists parameters on the designated disposable copy
-- [x] Restore the tracked open fixture to Regular 34 / Bold 72 / implicit odd
+- [x] Confirm the tracked fixture has Regular 84 / Bold 135 H stems, no IconGrid override, and implicit odd
 - [x] Leave the tracked fixture unsaved
 - [ ] Confirm all nine origins and representative glyph widths live
 - [ ] Confirm multiple zoom levels and light/dark appearance live

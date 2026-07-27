@@ -124,9 +124,17 @@ class Parameter(object):
         self.active = active
 
 
+class StemDefinition(object):
+    def __init__(self, name, horizontal=False):
+        self.name = name
+        self.horizontal = horizontal
+
+
 class FakeGraphicView(object):
-    def __init__(self, layer):
+    def __init__(self, layer, window):
         self.layer = layer
+        self._window = window
+        self.invalidation_requests = []
 
     def activeLayer(self):
         return self.layer
@@ -134,12 +142,18 @@ class FakeGraphicView(object):
     def getActiveLocation_(self, event):
         return event.point
 
+    def window(self):
+        return self._window
+
+    def setNeedsDisplay_(self, value):
+        self.invalidation_requests.append(bool(value))
+
 
 class FakeController(object):
     def __init__(self, draw_tool, event_tool, layer):
         self.draw_tool = draw_tool
         self.event_tool = event_tool
-        self.graphic_view = FakeGraphicView(layer)
+        self.graphic_view = FakeGraphicView(layer, self)
 
     def view(self):
         return self
@@ -164,13 +178,17 @@ class FakeController(object):
 
 
 class FakeMouseEvent(object):
-    def __init__(self, point):
+    def __init__(self, point, window=None):
         self.point = point
+        self._window = window
+
+    def window(self):
+        return self._window
 
 
 class FakeNotification(object):
-    def __init__(self, point):
-        self.event = FakeMouseEvent(point)
+    def __init__(self, point, window=None):
+        self.event = FakeMouseEvent(point, window=window)
 
     def object(self):
         return self.event
@@ -267,14 +285,23 @@ def owner(**values):
     return result
 
 
-def layer_fixture(font_parameters=None, master_parameters=None, width=1000, selection=None):
+def layer_fixture(
+    font_parameters=None,
+    master_parameters=None,
+    width=1000,
+    selection=None,
+    stem_definitions=None,
+    stem_values=None,
+):
     font = owner(**(font_parameters or {}))
     font.upm = 1000
+    font.stems = list(stem_definitions or [])
     master = owner(**(master_parameters or {}))
     master.ascender = 800
     master.capHeight = 700
     master.xHeight = 500
     master.descender = -200
+    master.stems = stem_values or {}
     glyph = type("Glyph", (), {"parent": font})()
     return type(
         "Layer",
@@ -388,6 +415,25 @@ class PluginAdapterTests(unittest.TestCase):
         self.assertEqual(geometry.axis_lines, [])
         self.assertTrue(all(ring.radius % 72.0 == 0 for ring in geometry.rings))
 
+    def test_master_h_stem_is_the_default_rendered_grid_size(self):
+        layer = layer_fixture(
+            stem_definitions=[
+                StemDefinition("e Horizontal Stem", horizontal=True),
+                StemDefinition("H Vertical Stem"),
+                StemDefinition("H Horizontal Stem", horizontal=True),
+            ],
+            stem_values={
+                "e Horizontal Stem": 62,
+                "H Vertical Stem": 90,
+                "H Horizontal Stem": 84,
+            },
+        )
+        config, geometry = self.plugin._geometry_for_layer(layer)
+        self.assertEqual(config.grid_size, 84.0)
+        self.assertEqual(geometry.center, (500.0, 350.0))
+        self.assertEqual(len(geometry.rings), 2)
+        self.assertTrue(all(ring.radius % 84.0 == 0 for ring in geometry.rings))
+
     def test_missing_layer_is_safe_noop(self):
         self.assertIsNone(self.plugin.background(None))
         self.assertEqual(FakePath.instances, [])
@@ -400,10 +446,14 @@ class PluginAdapterTests(unittest.TestCase):
 
         self.plugin._creation_hover_layer = object()
         self.plugin._creation_hover_point = (100.0, 200.0)
+        self.plugin._creation_hover_hits = (object(),)
+        self.plugin._hover_render_cache = (object(), object(), object(), (), 2.0)
         self.plugin.willDeactivate()
         self.assertEqual(FAKE_GLYPHS.callbacks, [])
         self.assertIsNone(self.plugin._creation_hover_layer)
         self.assertIsNone(self.plugin._creation_hover_point)
+        self.assertEqual(self.plugin._creation_hover_hits, ())
+        self.assertIsNone(self.plugin._hover_render_cache)
 
     def test_draw_rectangle_and_circle_hover_while_idle(self):
         for class_name in (
@@ -418,26 +468,219 @@ class PluginAdapterTests(unittest.TestCase):
                     font_parameters={
                         "IconGrid.columns": 10,
                         "IconGrid.rows": 10,
+                        "IconGrid.padding": 2,
                         "IconGrid.rings": 0,
                         "IconGrid.spokes": 0,
                         "IconGrid.showKeylines": False,
                         "IconGrid.origin": "bottom-left",
                     }
                 )
-                self.configure_tool(layer, dragging=False, class_name=class_name)
+                controller = self.configure_tool(
+                    layer,
+                    dragging=False,
+                    class_name=class_name,
+                )
+                self.plugin.background(layer)
+                FakePath.instances = []
                 self.plugin.willActivate()
                 self.plugin._mouse_moved(FakeNotification((200.9, 237.3)))
-                self.assertEqual(FAKE_GLYPHS.redraw_count, 1)
+                self.assertEqual(controller.graphic_view.invalidation_requests, [True])
+                self.assertEqual(FAKE_GLYPHS.redraw_count, 0)
                 self.plugin._mouse_moved(FakeNotification((200.9, 237.3)))
-                self.assertEqual(FAKE_GLYPHS.redraw_count, 1)
+                self.assertEqual(controller.graphic_view.invalidation_requests, [True])
+                self.plugin._mouse_moved(FakeNotification((199.1, 237.3)))
+                self.assertEqual(controller.graphic_view.invalidation_requests, [True])
 
                 self.plugin.background(layer)
                 self.assertTrue(any(path.width == 0.7 for path in FakePath.instances))
 
                 self.plugin._mouse_moved(FakeNotification((201.1, 237.3)))
+                self.assertEqual(
+                    controller.graphic_view.invalidation_requests,
+                    [True, True],
+                )
+                self.assertEqual(FAKE_GLYPHS.redraw_count, 0)
                 FakePath.instances = []
                 self.plugin.background(layer)
                 self.assertFalse(any(path.width == 0.7 for path in FakePath.instances))
+
+    def test_shape_drag_mouse_moves_never_request_global_redraw(self):
+        layer = layer_fixture(
+            font_parameters={
+                "IconGrid.columns": 10,
+                "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
+                "IconGrid.rings": 0,
+                "IconGrid.spokes": 0,
+                "IconGrid.showKeylines": False,
+                "IconGrid.origin": "bottom-left",
+            }
+        )
+        controller = self.configure_tool(
+            layer,
+            dragging=False,
+            class_name="GlyphsToolPrimitivesCircle",
+        )
+        self.plugin.willActivate()
+        self.plugin.background(layer)
+        self.plugin._mouse_moved(FakeNotification((200.9, 237.3)))
+        self.assertEqual(controller.graphic_view.invalidation_requests, [True])
+        self.assertEqual(FAKE_GLYPHS.redraw_count, 0)
+
+        controller.event_tool.dragging = True
+        controller.event_tool.kvc_values["selectionDrag"] = (200.9, 237.3)
+        self.plugin._mouse_moved(FakeNotification((200.9, 237.3)))
+        self.plugin._mouse_moved(FakeNotification((300.0, 300.0)))
+
+        self.assertEqual(controller.graphic_view.invalidation_requests, [True])
+        self.assertEqual(FAKE_GLYPHS.redraw_count, 0)
+        self.assertIsNone(self.plugin._creation_hover_point)
+        self.assertEqual(self.plugin._creation_hover_hits, ())
+
+        self.plugin.background(layer)
+        self.assertTrue(any(path.width == 0.7 for path in FakePath.instances))
+
+    def test_ten_thousand_hover_events_use_one_cached_render(self):
+        layer = layer_fixture(
+            font_parameters={
+                "IconGrid.columns": 10,
+                "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
+                "IconGrid.rings": 0,
+                "IconGrid.spokes": 0,
+                "IconGrid.showKeylines": False,
+                "IconGrid.origin": "bottom-left",
+            }
+        )
+        controller = self.configure_tool(
+            layer,
+            dragging=False,
+            class_name="GlyphsToolPrimitivesCircle",
+        )
+        self.plugin.background(layer)
+        cached_render = self.plugin._hover_render_cache
+        geometry_calls = []
+
+        def unexpected_geometry_resolution(callback_layer):
+            geometry_calls.append(callback_layer)
+            raise AssertionError("mouse callbacks must use the cached render")
+
+        self.plugin._geometry_for_layer = unexpected_geometry_resolution
+        self.plugin.willActivate()
+        for index in range(10000):
+            x = 199.1 if index % 2 else 200.9
+            self.plugin._mouse_moved(FakeNotification((x, 237.3)))
+
+        self.assertEqual(geometry_calls, [])
+        self.assertIs(self.plugin._hover_render_cache, cached_render)
+        self.assertEqual(controller.graphic_view.invalidation_requests, [True])
+        self.assertEqual(FAKE_GLYPHS.redraw_count, 0)
+
+    def test_hover_invalidates_only_the_active_edit_view(self):
+        layer = layer_fixture(
+            font_parameters={
+                "IconGrid.columns": 10,
+                "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
+                "IconGrid.rings": 0,
+                "IconGrid.spokes": 0,
+                "IconGrid.showKeylines": False,
+                "IconGrid.origin": "bottom-left",
+            }
+        )
+        controller = self.configure_tool(
+            layer,
+            dragging=False,
+            class_name="GlyphsToolDraw",
+        )
+        self.plugin.background(layer)
+
+        self.plugin._mouse_moved(FakeNotification((200.9, 237.3)))
+        self.plugin._mouse_moved(FakeNotification((201.1, 237.3)))
+        self.assertEqual(controller.graphic_view.invalidation_requests, [True, True])
+        self.assertEqual(FAKE_GLYPHS.redraw_count, 0)
+
+        controller.graphic_view.setNeedsDisplay_ = None
+        self.plugin._mouse_moved(FakeNotification((200.9, 237.3)))
+        self.assertEqual(controller.graphic_view.invalidation_requests, [True, True])
+        self.assertEqual(FAKE_GLYPHS.redraw_count, 0)
+
+    def test_other_window_events_clear_hover_once_without_global_redraw(self):
+        layer = layer_fixture(
+            font_parameters={
+                "IconGrid.columns": 10,
+                "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
+                "IconGrid.rings": 0,
+                "IconGrid.spokes": 0,
+                "IconGrid.showKeylines": False,
+                "IconGrid.origin": "bottom-left",
+            }
+        )
+        controller = self.configure_tool(
+            layer,
+            dragging=False,
+            class_name="GlyphsToolDraw",
+        )
+        self.plugin.background(layer)
+        self.plugin._mouse_moved(FakeNotification((200.9, 237.3)))
+
+        other_window = object()
+        self.plugin._mouse_moved(
+            FakeNotification((200.9, 237.3), window=other_window)
+        )
+        self.plugin._mouse_moved(
+            FakeNotification((200.9, 237.3), window=other_window)
+        )
+
+        self.assertEqual(controller.graphic_view.invalidation_requests, [True, True])
+        self.assertEqual(FAKE_GLYPHS.redraw_count, 0)
+        self.assertIsNone(self.plugin._creation_hover_point)
+
+    def test_missing_and_invalid_cached_scales_fail_closed(self):
+        layer = layer_fixture()
+        controller = self.configure_tool(
+            layer,
+            dragging=False,
+            class_name="GlyphsToolPrimitivesRect",
+        )
+        del self.plugin.scale
+        self.plugin._mouse_moved(FakeNotification((200.0, 237.3)))
+        self.assertEqual(controller.graphic_view.invalidation_requests, [])
+
+        for scale in (0, -1, None, float("nan"), float("inf")):
+            with self.subTest(scale=scale):
+                self.plugin.scale = scale
+                self.plugin.background(layer)
+                self.plugin._mouse_moved(FakeNotification((200.0, 237.3)))
+                self.assertIsNone(self.plugin._hover_render_cache)
+
+        self.assertEqual(controller.graphic_view.invalidation_requests, [])
+        self.assertEqual(FAKE_GLYPHS.redraw_count, 0)
+
+    def test_hover_observer_contains_and_warns_once_for_runtime_errors(self):
+        layer = layer_fixture()
+        controller = self.configure_tool(
+            layer,
+            dragging=False,
+            class_name="GlyphsToolDraw",
+        )
+
+        def fail(_controller, _notification):
+            raise RuntimeError("simulated callback failure")
+
+        self.plugin._handle_mouse_moved = fail
+        self.plugin._mouse_moved(FakeNotification((200.0, 237.3)))
+        self.plugin._mouse_moved(FakeNotification((200.0, 237.3)))
+
+        matching = [
+            message
+            for message in self.plugin.messages
+            if "Hover callback" in message
+        ]
+        self.assertEqual(len(matching), 1)
+        self.assertEqual(controller.graphic_view.invalidation_requests, [])
+        self.assertEqual(FAKE_GLYPHS.redraw_count, 0)
 
     def test_creation_hover_never_changes_edit_node_behavior(self):
         node = FakeNode((250.0, 237.3))
@@ -614,6 +857,7 @@ class PluginAdapterTests(unittest.TestCase):
                 font_parameters={
                     "IconGrid.columns": 10,
                     "IconGrid.rows": 10,
+                    "IconGrid.padding": 2,
                     "IconGrid.rings": 0,
                     "IconGrid.spokes": 0,
                     "IconGrid.showKeylines": False,
@@ -644,6 +888,7 @@ class PluginAdapterTests(unittest.TestCase):
             font_parameters={
                 "IconGrid.columns": 10,
                 "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
                 "IconGrid.rings": 0,
                 "IconGrid.spokes": 0,
                 "IconGrid.showKeylines": False,
@@ -674,6 +919,7 @@ class PluginAdapterTests(unittest.TestCase):
             font_parameters={
                 "IconGrid.columns": 10,
                 "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
                 "IconGrid.rings": 0,
                 "IconGrid.spokes": 0,
                 "IconGrid.showKeylines": False,
@@ -719,6 +965,7 @@ class PluginAdapterTests(unittest.TestCase):
             font_parameters={
                 "IconGrid.columns": 10,
                 "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
                 "IconGrid.rings": 0,
                 "IconGrid.spokes": 0,
                 "IconGrid.showKeylines": False,
@@ -739,6 +986,64 @@ class PluginAdapterTests(unittest.TestCase):
         highlighted_points = [point for operation, point in highlighted.operations if operation != "rect"]
         self.assertTrue(any(point[0] == 200.0 for point in highlighted_points))
         self.assertFalse(any(point[0] == 400.0 for point in highlighted_points))
+
+    def test_alignment_highlight_is_suppressed_above_sixty_four_moving_nodes(self):
+        nodes = [
+            FakeNode((250.0, float(index * 10)))
+            for index in range(65)
+        ]
+        layer = layer_fixture(
+            font_parameters={
+                "IconGrid.columns": 10,
+                "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
+                "IconGrid.rings": 0,
+                "IconGrid.spokes": 0,
+                "IconGrid.showKeylines": False,
+                "IconGrid.origin": "bottom-left",
+                "IconGrid.gridMode": "even",
+            },
+            selection=nodes,
+        )
+        controller = self.configure_tool(layer, dragging=False)
+        self.plugin.background(layer)
+
+        for node in nodes:
+            node.position = (200.0, node.position[1])
+        controller.event_tool.dragging = True
+        FakePath.instances = []
+        self.plugin.background(layer)
+
+        self.assertFalse(any(path.width == 0.7 for path in FakePath.instances))
+
+    def test_alignment_highlight_accepts_sixty_four_moving_nodes(self):
+        nodes = [
+            FakeNode((250.0, float(index * 10)))
+            for index in range(64)
+        ]
+        layer = layer_fixture(
+            font_parameters={
+                "IconGrid.columns": 10,
+                "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
+                "IconGrid.rings": 0,
+                "IconGrid.spokes": 0,
+                "IconGrid.showKeylines": False,
+                "IconGrid.origin": "bottom-left",
+                "IconGrid.gridMode": "even",
+            },
+            selection=nodes,
+        )
+        controller = self.configure_tool(layer, dragging=False)
+        self.plugin.background(layer)
+
+        for node in nodes:
+            node.position = (200.0, node.position[1])
+        controller.event_tool.dragging = True
+        FakePath.instances = []
+        self.plugin.background(layer)
+
+        self.assertTrue(any(path.width == 0.7 for path in FakePath.instances))
 
     def test_dragging_without_selected_node_ignores_cursor_and_non_nodes(self):
         for selection in ([], [FakeAnchor((0.0, 100.0))]):
@@ -775,6 +1080,7 @@ class PluginAdapterTests(unittest.TestCase):
                 "IconGrid.height": 1000,
                 "IconGrid.columns": 10,
                 "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
                 "IconGrid.rings": 0,
                 "IconGrid.spokes": 0,
                 "IconGrid.showKeylines": False,
@@ -797,6 +1103,7 @@ class PluginAdapterTests(unittest.TestCase):
             font_parameters={
                 "IconGrid.columns": 10,
                 "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
                 "IconGrid.rings": 0,
                 "IconGrid.spokes": 0,
                 "IconGrid.showKeylines": False,
@@ -824,6 +1131,7 @@ class PluginAdapterTests(unittest.TestCase):
             font_parameters={
                 "IconGrid.columns": 10,
                 "IconGrid.rows": 10,
+                "IconGrid.padding": 2,
                 "IconGrid.rings": 0,
                 "IconGrid.spokes": 0,
                 "IconGrid.showKeylines": False,

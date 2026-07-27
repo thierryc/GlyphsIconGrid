@@ -28,13 +28,20 @@ class GlyphsMcpIconGridSkillTests(unittest.TestCase):
         self.assertIn("never edit or patch that file on disk", source)
         self.assertIn("Never call `save_font`", source)
         self.assertNotIn("Ensure only the intended Glyphs major version is running", source)
-        self.assertIn("use `34` on Regular and `72` on Bold", source)
+        self.assertIn("generic scaffold starts at `84` on Regular and `135` on Bold", source)
+        self.assertIn("review_master_stem_metrics", source)
+        self.assertIn("no `gridSize` when a usable master H stem exists", source)
         self.assertIn("default `IconGrid.gridMode = odd`", source)
+        self.assertIn("minimal configuration, not for all supported parameters", source)
+        self.assertIn("Never set `columns`, `rows`, or `rings`", source)
+        self.assertIn("which built-in defaults remain intentionally unstored", source)
         self.assertIn("references/release-verification.md", source)
 
     def test_openai_metadata_declares_local_glyphs_mcp_dependency(self):
         source = read(os.path.join("agents", "openai.yaml"))
         self.assertIn('display_name: "Glyphs MCP Icon Grid"', source)
+        self.assertIn('short_description: "Simplify IconGrid through Glyphs MCP"', source)
+        self.assertIn("smallest necessary IconGrid setup", source)
         self.assertIn('value: "glyphs_mcp_server"', source)
         self.assertIn('url: "http://127.0.0.1:9680/mcp/"', source)
 

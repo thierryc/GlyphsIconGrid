@@ -3,7 +3,10 @@ from __future__ import absolute_import
 import ast
 import os
 import plistlib
+import subprocess
 import struct
+import sys
+import tempfile
 import unittest
 import zipfile
 
@@ -62,26 +65,72 @@ class BundleTests(unittest.TestCase):
         plugin_source = os.path.join(RESOURCES, "plugin.py")
         self.assertTrue(os.access(plugin_source, os.X_OK))
 
-    def test_tracked_fixture_has_two_masters_and_minimal_grid_preset(self):
+    def test_tracked_fixture_has_two_masters_and_weight_matched_h_stems(self):
         fixture = os.path.join(ROOT, "tests", "fixtures", "IconGrid-Test.glyphs")
         with open(fixture, "r", encoding="utf-8") as handle:
             source = handle.read()
         self.assertEqual(source.count("id = regular;"), 1)
         self.assertEqual(source.count("id = bold;"), 1)
         self.assertGreaterEqual(source.count("width = 1000;"), 2)
-        self.assertEqual(source.count("name = IconGrid."), 2)
-        self.assertEqual(source.count("customParameters = ("), 2)
-        self.assertIn("name = IconGrid.gridSize;\nvalue = 34;", source)
-        self.assertIn("name = IconGrid.gridSize;\nvalue = 72;", source)
+        self.assertEqual(source.count("name = IconGrid."), 0)
+        self.assertEqual(source.count("customParameters = ("), 0)
+        self.assertIn('name = "H Horizontal Stem";', source)
+        self.assertIn("stemValues = (\n84\n);", source)
+        self.assertIn("stemValues = (\n135\n);", source)
 
-    def test_release_archive_includes_bundle_license_and_notice(self):
+    def test_release_archive_includes_bundle_skill_installer_license_and_notice(self):
         output = package_script.main()
         with zipfile.ZipFile(output, "r") as archive:
             names = archive.namelist()
+            installer = archive.getinfo("Install GlyphsIconGrid Skill.command")
         self.assertIn("IconGrid.glyphsReporter/Contents/Info.plist", names)
+        self.assertIn("skills/glyphs-mcp-icon-grid/SKILL.md", names)
+        self.assertIn(
+            "skills/glyphs-mcp-icon-grid/references/parameters.md",
+            names,
+        )
+        self.assertEqual((installer.external_attr >> 16) & 0o777, 0o755)
         self.assertIn("LICENSE", names)
         self.assertIn("NOTICE", names)
         self.assertTrue(os.path.isfile(output + ".sha256"))
+
+    def test_macos_skill_installer_is_self_contained_and_python_free(self):
+        path = os.path.join(ROOT, "scripts", "Install GlyphsIconGrid Skill.command")
+        self.assertTrue(os.access(path, os.X_OK))
+        with open(path, "r", encoding="utf-8") as handle:
+            source = handle.read()
+        self.assertIn('SOURCE="${RELEASE_ROOT}/skills/glyphs-mcp-icon-grid"', source)
+        self.assertIn("/usr/bin/ditto", source)
+        self.assertIn(".agents/skills", source)
+        self.assertIn(".claude/skills", source)
+        self.assertIn("dated backup", source)
+        self.assertNotIn("python3", source)
+
+    @unittest.skipUnless(sys.platform == "darwin", "requires macOS")
+    def test_macos_skill_installer_copies_to_shared_user_location(self):
+        installer = os.path.join(
+            ROOT, "scripts", "Install GlyphsIconGrid Skill.command"
+        )
+        with tempfile.TemporaryDirectory() as install_home:
+            environment = os.environ.copy()
+            environment["GLYPHS_ICON_GRID_SKILL_HOME"] = install_home
+            result = subprocess.run(
+                [installer, "shared"],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=environment,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            destination = os.path.join(
+                install_home, ".agents", "skills", "glyphs-mcp-icon-grid"
+            )
+            self.assertTrue(os.path.isfile(os.path.join(destination, "SKILL.md")))
+            self.assertTrue(
+                os.path.isfile(
+                    os.path.join(destination, "references", "parameters.md")
+                )
+            )
 
 
 if __name__ == "__main__":

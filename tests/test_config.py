@@ -23,6 +23,7 @@ class ConfigTests(unittest.TestCase):
         x_height=500,
         ascender=800,
         descender=-200,
+        stem=None,
     ):
         return resolve_config(
             font_parameters=font or {},
@@ -32,6 +33,7 @@ class ConfigTests(unittest.TestCase):
             master_x_height=x_height,
             master_ascender=ascender,
             master_descender=descender,
+            master_stem=stem,
         )
 
     def test_defaults_are_complete_and_safe(self):
@@ -42,14 +44,15 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.grid_mode, "odd")
         self.assertEqual(config.height, 1000.0)
         self.assertEqual(config.width, 1000.0)
+        self.assertEqual(config.live_diameter, 875.0)
         self.assertAlmostEqual(config.width / config.columns, config.height / config.rows)
         self.assertEqual(config.origin, "bottom-center")
-        self.assertEqual(config.baseline_offset, 250.0)
+        self.assertEqual(config.baseline_offset, 150.0)
         self.assertEqual(config.metric_top, 800.0)
         self.assertEqual(config.metric_bottom, -200.0)
         self.assertEqual(config.padding, 2.0)
         self.assertEqual(config.major_every, 4)
-        self.assertEqual(config.rings, 10)
+        self.assertEqual(config.rings, 2)
         self.assertEqual(config.spokes, 8)
         self.assertTrue(config.show_keylines)
         self.assertEqual(config.color, DEFAULT_GRID_COLOR)
@@ -57,6 +60,33 @@ class ConfigTests(unittest.TestCase):
         self.assertTrue(config.alignment_highlight)
         self.assertEqual(config.alignment_tolerance, 2.0)
         self.assertEqual(warnings, [])
+
+    def test_unstored_padding_derives_live_diameter_from_cap_height(self):
+        config, warnings = self.resolve(cap_height=700, stem=84)
+        self.assertEqual(config.live_diameter, 875.0)
+        self.assertEqual(config.padding, DEFAULTS["padding"])
+        self.assertEqual(warnings, [])
+
+        clamped, clamped_warnings = self.resolve(
+            master={"IconGrid.width": 800, "IconGrid.height": 600},
+            cap_height=700,
+        )
+        self.assertEqual(clamped.live_diameter, 600.0)
+        self.assertEqual(clamped_warnings, [])
+
+    def test_explicit_padding_disables_metric_live_diameter(self):
+        for scope in ("font", "master"):
+            with self.subTest(scope=scope):
+                values = {"IconGrid.padding": 1.25}
+                config, warnings = self.resolve(
+                    font=values if scope == "font" else None,
+                    master=values if scope == "master" else None,
+                    cap_height=700,
+                    stem=84,
+                )
+                self.assertIsNone(config.live_diameter)
+                self.assertEqual(config.padding, 1.25)
+                self.assertEqual(warnings, [])
 
     def test_all_nine_origins_are_supported(self):
         self.assertEqual(
@@ -177,6 +207,49 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(bold.grid_size, 72.0)
         self.assertEqual(regular_warnings + bold_warnings, [])
 
+    def test_master_stem_is_the_automatic_exact_grid_size(self):
+        config, warnings = self.resolve(stem=84)
+        self.assertEqual(config.grid_size, 84.0)
+        self.assertAlmostEqual(700.0 / config.grid_size, 8.333333333333334)
+        self.assertEqual(warnings, [])
+
+    def test_explicit_grid_size_overrides_automatic_master_stem(self):
+        config, warnings = self.resolve(
+            master={"IconGrid.gridSize": 63},
+            stem=84,
+        )
+        self.assertEqual(config.grid_size, 63.0)
+        self.assertEqual(warnings, [])
+
+    def test_count_based_settings_disable_the_automatic_master_stem(self):
+        for setting, value in (
+            ("IconGrid.columns", 20),
+            ("IconGrid.rows", 20),
+            ("IconGrid.rings", 8),
+        ):
+            with self.subTest(setting=setting):
+                config, warnings = self.resolve(
+                    master={setting: value},
+                    stem=84,
+                )
+                self.assertIsNone(config.grid_size)
+                self.assertEqual(warnings, [])
+
+    def test_invalid_explicit_grid_size_falls_back_to_master_stem(self):
+        config, warnings = self.resolve(
+            master={"IconGrid.gridSize": 1},
+            stem=84,
+        )
+        self.assertEqual(config.grid_size, 84.0)
+        self.assertEqual(len([item for item in warnings if "gridSize" in item]), 1)
+
+    def test_missing_or_unusable_stem_keeps_count_based_fallback(self):
+        for stem in (None, 0, -10, float("nan"), 3, 10**12):
+            with self.subTest(stem=stem):
+                config, warnings = self.resolve(stem=stem)
+                self.assertIsNone(config.grid_size)
+                self.assertEqual(warnings, [])
+
     def test_invalid_numbers_unknown_origin_and_malformed_color_fall_back(self):
         config, warnings = self.resolve(
             font={
@@ -197,7 +270,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(config.origin, DEFAULTS["origin"])
         self.assertEqual(config.color, DEFAULT_GRID_COLOR)
         self.assertEqual(config.opacity, DEFAULTS["opacity"])
-        self.assertEqual(config.baseline_offset, 250.0)
+        self.assertEqual(config.baseline_offset, 150.0)
         self.assertGreaterEqual(len(warnings), 8)
 
     def test_square_size_falls_back_from_upm_to_cap_height(self):
@@ -208,9 +281,18 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual((cap_config.height, cap_config.width), (720.0, 720.0))
         self.assertEqual((hard_config.height, hard_config.width), (1000.0, 1000.0))
 
-    def test_missing_x_height_keeps_baseline_origin_fallback(self):
+    def test_x_height_does_not_control_vertical_centering(self):
         config, warnings = self.resolve(x_height=None)
+        self.assertEqual(config.baseline_offset, 150.0)
+        self.assertEqual(config.metric_top, 800.0)
+        self.assertEqual(config.metric_bottom, -200.0)
+        self.assertEqual(warnings, [])
+
+    def test_missing_cap_height_keeps_baseline_origin_fallback(self):
+        config, warnings = self.resolve(cap_height=None)
         self.assertEqual(config.baseline_offset, 0.0)
+        self.assertIsNone(config.live_diameter)
+        self.assertEqual(config.padding, DEFAULTS["padding"])
         self.assertEqual(config.metric_top, 800.0)
         self.assertEqual(config.metric_bottom, -200.0)
         self.assertEqual(warnings, [])
@@ -339,6 +421,10 @@ class ConfigTests(unittest.TestCase):
             self.assertGreater(config.rows, 0)
             self.assertTrue(math.isfinite(config.height))
             self.assertTrue(math.isfinite(config.width))
+            self.assertTrue(
+                config.live_diameter is None
+                or math.isfinite(config.live_diameter)
+            )
             self.assertTrue(
                 config.grid_size is None or math.isfinite(config.grid_size)
             )

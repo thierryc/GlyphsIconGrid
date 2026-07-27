@@ -45,18 +45,18 @@
       "file": "parameter-matrix/recommended-masters.glyphs",
       "fontParameters": [],
       "masterParameters": {
-        "regular": [{"name": "IconGrid.gridSize", "value": 34, "active": true}],
-        "bold": [{"name": "IconGrid.gridSize", "value": 72, "active": true}]
+        "regular": [{"name": "IconGrid.gridSize", "value": 84, "active": true}],
+        "bold": [{"name": "IconGrid.gridSize", "value": 135, "active": true}]
       },
       "effective": {
-        "regular": {"grid_size": 34, "grid_mode": "odd"},
-        "bold": {"grid_size": 72, "grid_mode": "odd"}
+        "regular": {"grid_size": 84, "grid_mode": "odd"},
+        "bold": {"grid_size": 135, "grid_mode": "odd"}
       },
       "warningsContain": [],
       "mutation": {
         "scope": "master",
         "master": "regular",
-        "changes": {"IconGrid.gridSize": 36},
+        "changes": {"IconGrid.gridSize": 86},
         "saveReopen": true
       }
     },
@@ -83,14 +83,14 @@
       ],
       "masterParameters": {
         "regular": [
-          {"name": "IconGrid.gridSize", "value": 34, "active": true},
+          {"name": "IconGrid.gridSize", "value": 84, "active": true},
           {"name": "IconGrid.gridMode", "value": "odd", "active": true}
         ],
-        "bold": [{"name": "IconGrid.gridSize", "value": 72, "active": true}]
+        "bold": [{"name": "IconGrid.gridSize", "value": 135, "active": true}]
       },
       "effective": {
         "regular": {
-          "grid_size": 34,
+          "grid_size": 84,
           "grid_mode": "odd",
           "width": 960,
           "height": 980,
@@ -105,7 +105,7 @@
           "alignment_tolerance": 4
         },
         "bold": {
-          "grid_size": 72,
+          "grid_size": 135,
           "grid_mode": "even"
         }
       },

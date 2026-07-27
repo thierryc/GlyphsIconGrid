@@ -3,13 +3,20 @@
 
 from __future__ import division, print_function, unicode_literals
 
+import math
+
 import objc
 from AppKit import NSBezierPath, NSClassFromString, NSColor, NSMakeRect
 from GlyphsApp import Glyphs, MOUSEMOVED
 from GlyphsApp.plugins import ReporterPlugin
 
 from glyphs_icon_grid.config import resolve_config
-from glyphs_icon_grid.geometry import build_geometry, hit_test_guides, line_width_for_scale
+from glyphs_icon_grid.geometry import (
+	build_geometry,
+	build_guide_catalog,
+	hit_test_guide_catalog,
+	line_width_for_scale,
+)
 from glyphs_icon_grid.runtime import (
 	active_mouse_context,
 	parameter_entries,
@@ -23,6 +30,9 @@ from glyphs_icon_grid.runtime import (
 	tool_is_drawing,
 	tool_uses_creation_hover,
 )
+
+
+_MAX_ALIGNMENT_POINTS = 64
 
 
 def _rect(canvas):
@@ -139,16 +149,13 @@ def _controller(plugin):
 		return None
 
 
-def _alignment_hits(geometry, points, tolerance):
-	hits = []
-	seen = set()
-	for point in points:
-		for reference in hit_test_guides(geometry, point, tolerance):
-			if reference in seen:
-				continue
-			hits.append(reference)
-			seen.add(reference)
-	return tuple(hits)
+def _alignment_hits(catalog, points, tolerance):
+	return hit_test_guide_catalog(
+		catalog,
+		points,
+		tolerance,
+		max_points=_MAX_ALIGNMENT_POINTS,
+	)
 
 
 def _same_object(left, right):
@@ -156,6 +163,40 @@ def _same_object(left, right):
 		return True
 	try:
 		return bool(left == right)
+	except Exception:
+		return False
+
+
+def _positive_scale(value):
+	try:
+		scale = float(value)
+	except (TypeError, ValueError, OverflowError):
+		return None
+	if not math.isfinite(scale) or scale <= 0:
+		return None
+	return scale
+
+
+def _graphic_view(controller):
+	if controller is None:
+		return None
+	try:
+		view = getattr(controller, "graphicView")
+		return view() if callable(view) else view
+	except Exception:
+		return None
+
+
+def _invalidate_edit_view(controller):
+	view = _graphic_view(controller)
+	if view is None:
+		return False
+	try:
+		invalidate = getattr(view, "setNeedsDisplay_")
+		if not callable(invalidate):
+			return False
+		invalidate(True)
+		return True
 	except Exception:
 		return False
 
@@ -173,6 +214,8 @@ class GlyphsIconGridReporter(ReporterPlugin):
 		self._alignment_drag_session = None
 		self._creation_hover_layer = None
 		self._creation_hover_point = None
+		self._creation_hover_hits = ()
+		self._hover_render_cache = None
 		self._creation_hover_callback_registered = False
 
 	def willActivate(self):
@@ -187,6 +230,8 @@ class GlyphsIconGridReporter(ReporterPlugin):
 		self._creation_hover_callback_registered = False
 		self._creation_hover_layer = None
 		self._creation_hover_point = None
+		self._creation_hover_hits = ()
+		self._hover_render_cache = None
 
 	@objc.python_method
 	def __del__(self):
@@ -197,32 +242,90 @@ class GlyphsIconGridReporter(ReporterPlugin):
 			pass
 
 	@objc.python_method
+	def _set_creation_hover(self, controller, layer, point, hits, invalidate=True):
+		visual_change = hits != self._creation_hover_hits or (
+			bool(hits) and not _same_object(layer, self._creation_hover_layer)
+		)
+		self._creation_hover_layer = layer
+		self._creation_hover_point = point
+		self._creation_hover_hits = hits
+		if invalidate and visual_change:
+			_invalidate_edit_view(controller)
+
+	@objc.python_method
+	def _cache_hover_render(self, layer, config, geometry, scale):
+		scale = _positive_scale(scale)
+		if scale is None:
+			self._hover_render_cache = None
+			return None
+		catalog = build_guide_catalog(geometry)
+		self._hover_render_cache = (layer, config, geometry, catalog, scale)
+		return catalog, scale
+
+	@objc.python_method
+	def _cached_hover_render(self, layer):
+		cache = self._hover_render_cache
+		if cache is None or not _same_object(layer, cache[0]):
+			return None
+		return cache
+
+	@objc.python_method
 	def _mouse_moved(self, notification):
-		controller = _controller(self)
+		controller = None
+		try:
+			controller = _controller(self)
+			self._handle_mouse_moved(controller, notification)
+		except Exception as error:
+			self._set_creation_hover(controller, None, None, ())
+			try:
+				self._warn_once(
+					"Hover callback ignored an unexpected {}.".format(
+						error.__class__.__name__
+					)
+				)
+			except Exception:
+				pass
+
+	@objc.python_method
+	def _handle_mouse_moved(self, controller, notification):
+		if tool_drag_session(controller) is not None:
+			# Glyphs owns the live primitive preview while dragging. Reporter
+			# invalidation here can erase that overlay before the tool presents it.
+			self._set_creation_hover(
+				controller,
+				None,
+				None,
+				(),
+				invalidate=False,
+			)
+			return
 		if not tool_uses_creation_hover(controller, NSClassFromString):
-			had_hover = self._creation_hover_point is not None
-			self._creation_hover_layer = None
-			self._creation_hover_point = None
-			if had_hover:
-				Glyphs.redraw()
+			self._set_creation_hover(controller, None, None, ())
 			return
 
 		context = active_mouse_context(controller, notification)
 		if context is None:
-			if self._creation_hover_point is None:
-				return
-			self._creation_hover_layer = None
-			self._creation_hover_point = None
-		else:
-			layer, point = context
-			if (
-				_same_object(layer, self._creation_hover_layer)
-				and point == self._creation_hover_point
-			):
-				return
-			self._creation_hover_layer = layer
-			self._creation_hover_point = point
-		Glyphs.redraw()
+			self._set_creation_hover(controller, None, None, ())
+			return
+
+		layer, point = context
+		if (
+			_same_object(layer, self._creation_hover_layer)
+			and point == self._creation_hover_point
+		):
+			return
+
+		hits = ()
+		cache = self._cached_hover_render(layer)
+		if cache is not None:
+			_layer, config, _geometry, catalog, scale = cache
+			if config.alignment_highlight:
+				hits = _alignment_hits(
+					catalog,
+					(point,),
+					config.alignment_tolerance / scale,
+				)
+		self._set_creation_hover(controller, layer, point, hits)
 
 	@objc.python_method
 	def _warn_once(self, message):
@@ -334,14 +437,22 @@ class GlyphsIconGridReporter(ReporterPlugin):
 	def background(self, layer):
 		controller = _controller(self)
 		if not tool_allows_drawing(controller, NSClassFromString):
+			self._hover_render_cache = None
 			return None
 		resolved = self._geometry_for_layer(layer)
 		if resolved is None:
+			self._hover_render_cache = None
 			return None
 		config, geometry = resolved
 
 		color = _base_color(config.color)
 		scale = self.getScale()
+		hover_render = self._cache_hover_render(layer, config, geometry, scale)
+		if hover_render is None:
+			guide_catalog = ()
+			hover_scale = None
+		else:
+			guide_catalog, hover_scale = hover_render
 		if geometry.minor_lines:
 			_stroke(_line_path(geometry.minor_lines), color, config.opacity * 0.45, 0.55, scale)
 		if geometry.spokes:
@@ -359,10 +470,12 @@ class GlyphsIconGridReporter(ReporterPlugin):
 
 		moving_node_points = self._moving_node_points(layer, controller)
 		alignment_points = moving_node_points
+		using_creation_hover = False
 		active_drag = tool_drag_session(controller) is not None
 		if active_drag and tool_uses_creation_hover(controller, NSClassFromString):
 			self._creation_hover_layer = None
 			self._creation_hover_point = None
+			self._creation_hover_hits = ()
 		if not alignment_points:
 			creation_point = tool_creation_drag_point(
 				controller,
@@ -378,13 +491,20 @@ class GlyphsIconGridReporter(ReporterPlugin):
 			and _same_object(layer, self._creation_hover_layer)
 		):
 			alignment_points = (self._creation_hover_point,)
+			using_creation_hover = True
 		alignment_hits = ()
-		if config.alignment_highlight and alignment_points:
+		if (
+			config.alignment_highlight
+			and alignment_points
+			and hover_scale is not None
+		):
 			alignment_hits = _alignment_hits(
-				geometry,
+				guide_catalog,
 				alignment_points,
-				config.alignment_tolerance / scale,
+				config.alignment_tolerance / hover_scale,
 			)
+		if using_creation_hover:
+			self._creation_hover_hits = alignment_hits
 		if alignment_hits:
 			_stroke(
 				_highlight_path(geometry, alignment_hits),

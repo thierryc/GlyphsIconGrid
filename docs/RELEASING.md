@@ -13,7 +13,7 @@ python3 scripts/release_check.py --require-artifacts
 python3 scripts/build_site.py
 ```
 
-Review the ZIP contents and checksum. Confirm that the version in the bundle, update plist, changelog, release notes, and intended tag agree.
+Review the ZIP contents and checksum. Confirm that it contains the plug-in bundle, the complete `skills/glyphs-mcp-icon-grid` directory, and the executable `Install GlyphsIconGrid Skill.command`. Confirm that the version in the bundle, update plist, changelog, release notes, and intended tag agree.
 
 ## 2. Live gate
 

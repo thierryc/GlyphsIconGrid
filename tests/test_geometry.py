@@ -9,8 +9,11 @@ from glyphs_icon_grid.geometry import (
     GuideRef,
     Line,
     build_geometry,
+    build_guide_catalog,
     canvas_for_origin,
+    hit_test_guide_catalog,
     hit_test_guides,
+    hit_test_guides_for_points,
     line_width_for_scale,
     snapshot,
 )
@@ -122,7 +125,7 @@ class GeometryTests(unittest.TestCase):
             else:
                 self.fail("Grid line is diagonal: {!r}".format(line))
 
-    def test_background_grid_overflows_canvas_by_one_square_cell(self):
+    def test_background_grid_overflows_canvas_by_four_square_cells(self):
         geometry = build_geometry(
             1000,
             self.config(
@@ -134,17 +137,17 @@ class GeometryTests(unittest.TestCase):
             ),
         )
         self.assertEqual(geometry.canvas.as_tuple(), (0.0, 0.0, 1000.0, 800.0))
-        self.assertEqual(geometry.grid_bounds.as_tuple(), (-100.0, -100.0, 1100.0, 900.0))
+        self.assertEqual(geometry.grid_bounds.as_tuple(), (-400.0, -400.0, 1400.0, 1200.0))
         vertical_positions = {
             line.x1 for line in geometry.all_grid_lines() if line.x1 == line.x2
         }
         horizontal_positions = {
             line.y1 for line in geometry.all_grid_lines() if line.y1 == line.y2
         }
-        self.assertEqual((min(vertical_positions), max(vertical_positions)), (-50.0, 1050.0))
-        self.assertEqual((min(horizontal_positions), max(horizontal_positions)), (-50.0, 850.0))
+        self.assertEqual((min(vertical_positions), max(vertical_positions)), (-350.0, 1350.0))
+        self.assertEqual((min(horizontal_positions), max(horizontal_positions)), (-350.0, 1150.0))
 
-    def test_default_square_centers_in_x_height_and_crosses_all_font_metrics(self):
+    def test_default_square_centers_in_cap_height_and_crosses_all_font_metrics(self):
         config = resolve_config(
             {},
             {},
@@ -155,12 +158,13 @@ class GeometryTests(unittest.TestCase):
             master_descender=-200,
         )[0]
         geometry = build_geometry(1000, config)
-        self.assertEqual(geometry.canvas.as_tuple(), (0.0, -250.0, 1000.0, 750.0))
-        self.assertEqual(geometry.center, (500.0, 250.0))
-        self.assertTrue(all(ring.cy == 250.0 for ring in geometry.rings))
-        self.assertTrue(all(spoke.y1 == 250.0 for spoke in geometry.spokes))
+        self.assertEqual(geometry.canvas.as_tuple(), (0.0, -150.0, 1000.0, 850.0))
+        self.assertEqual(geometry.live_area.as_tuple(), (62.5, -87.5, 937.5, 787.5))
+        self.assertEqual(geometry.center, (500.0, 350.0))
+        self.assertTrue(all(ring.cy == 350.0 for ring in geometry.rings))
+        self.assertTrue(all(spoke.y1 == 350.0 for spoke in geometry.spokes))
         self.assertTrue(
-            all(keyline.y + keyline.height / 2.0 == 250.0 for keyline in geometry.keylines)
+            all(keyline.y + keyline.height / 2.0 == 350.0 for keyline in geometry.keylines)
         )
         self.assertAlmostEqual(geometry.grid_bounds.width, geometry.grid_bounds.height)
         for metric in (-200.0, 500.0, 700.0, 800.0):
@@ -169,10 +173,10 @@ class GeometryTests(unittest.TestCase):
         cell_size = 1000.0 / 24.0
         self.assertGreaterEqual(geometry.grid_bounds.ymax, 800.0 + cell_size)
         self.assertLessEqual(geometry.grid_bounds.ymin, -200.0 - cell_size)
-        self.assertAlmostEqual(geometry.grid_bounds.xmin, -125.0)
-        self.assertAlmostEqual(geometry.grid_bounds.ymin, -375.0)
-        self.assertAlmostEqual(geometry.grid_bounds.xmax, 1125.0)
-        self.assertAlmostEqual(geometry.grid_bounds.ymax, 875.0)
+        self.assertAlmostEqual(geometry.grid_bounds.xmin, -1000.0 / 6.0)
+        self.assertAlmostEqual(geometry.grid_bounds.ymin, -150.0 - 1000.0 / 6.0)
+        self.assertAlmostEqual(geometry.grid_bounds.xmax, 1000.0 + 1000.0 / 6.0)
+        self.assertAlmostEqual(geometry.grid_bounds.ymax, 850.0 + 1000.0 / 6.0)
 
     def test_metric_overflow_is_capped_to_keep_background_compact(self):
         config = resolve_config(
@@ -186,10 +190,10 @@ class GeometryTests(unittest.TestCase):
         )[0]
         geometry = build_geometry(1000, config)
         cell_size = 1000.0 / 24.0
-        self.assertAlmostEqual(geometry.grid_bounds.xmin, -6.0 * cell_size)
-        self.assertAlmostEqual(geometry.grid_bounds.xmax, 1000.0 + 6.0 * cell_size)
-        self.assertAlmostEqual(geometry.grid_bounds.width, 1500.0)
-        self.assertAlmostEqual(geometry.grid_bounds.height, 1500.0)
+        self.assertAlmostEqual(geometry.grid_bounds.xmin, -8.0 * cell_size)
+        self.assertAlmostEqual(geometry.grid_bounds.xmax, 1000.0 + 8.0 * cell_size)
+        self.assertAlmostEqual(geometry.grid_bounds.width, 1000.0 + 16.0 * cell_size)
+        self.assertAlmostEqual(geometry.grid_bounds.height, 1000.0 + 16.0 * cell_size)
 
     def test_baseline_offset_moves_canvas_without_changing_odd_center_phase(self):
         geometry = build_geometry(
@@ -220,8 +224,8 @@ class GeometryTests(unittest.TestCase):
         verticals = sorted(
             line.x1 for line in geometry.all_grid_lines() if line.x1 == line.x2
         )
-        self.assertEqual(verticals[0], -100.0)
-        self.assertEqual(verticals[-1], 1000.0)
+        self.assertEqual(verticals[0], -400.0)
+        self.assertEqual(verticals[-1], 1300.0)
         self.assertIn(400.0, verticals)
         self.assertIn(500.0, verticals)
         self.assertNotIn(450.0, verticals)
@@ -241,8 +245,51 @@ class GeometryTests(unittest.TestCase):
         )
         self.assertEqual(geometry.live_area.as_tuple(), (100.0, 100.0, 1100.0, 500.0))
 
+    def test_metric_live_area_matches_open_share_keyline_design(self):
+        config = resolve_config(
+            {},
+            {},
+            master_cap_height=700,
+            font_upm=1000,
+            master_x_height=500,
+            master_ascender=800,
+            master_descender=-200,
+            master_stem=84,
+        )[0]
+        geometry = build_geometry(1027, config)
+        self.assertEqual(geometry.center, (513.5, 350.0))
+        self.assertEqual(geometry.live_area.as_tuple(), (76.0, -87.5, 951.0, 787.5))
+        self.assertEqual(geometry.live_radius, 437.5)
+
+        keylines = {shape.name: shape for shape in geometry.keylines}
+        self.assertEqual(
+            (keylines["circle"].x, keylines["circle"].y),
+            (76.0, -87.5),
+        )
+        self.assertEqual(
+            (keylines["circle"].width, keylines["circle"].height),
+            (875.0, 875.0),
+        )
+        self.assertEqual(
+            (keylines["square"].width, keylines["square"].height),
+            (787.5, 787.5),
+        )
+        self.assertEqual(
+            (keylines["portrait"].width, keylines["portrait"].height),
+            (700.0, 875.0),
+        )
+        self.assertEqual(
+            (
+                keylines["landscape"].x,
+                keylines["landscape"].y,
+                keylines["landscape"].width,
+                keylines["landscape"].height,
+            ),
+            (76.0, 0.0, 875.0, 700.0),
+        )
+
     def test_master_grid_size_controls_square_cells_and_ring_gaps_exactly(self):
-        for spacing, expected_ring_count in ((34.0, 12), (72.0, 4)):
+        for spacing in (34.0, 72.0):
             config = resolve_config(
                 {},
                 {
@@ -268,10 +315,33 @@ class GeometryTests(unittest.TestCase):
             self.assertTrue(
                 all(abs((top - bottom) - spacing) < 1e-9 for bottom, top in zip(horizontals, horizontals[1:]))
             )
-            self.assertEqual(len(geometry.rings), expected_ring_count)
+            self.assertEqual(len(geometry.rings), 2)
             radii = [0.0] + [ring.radius for ring in geometry.rings]
             self.assertTrue(
                 all(abs((outer - inner) - spacing) < 1e-9 for inner, outer in zip(radii, radii[1:]))
+            )
+
+    def test_weight_stems_produce_two_or_three_visible_concentric_circles(self):
+        for stem in (84.0, 135.0):
+            config = resolve_config(
+                {},
+                {},
+                master_cap_height=700,
+                font_upm=1000,
+                master_ascender=800,
+                master_descender=-200,
+                master_stem=stem,
+            )[0]
+            geometry = build_geometry(1000, config)
+            circular_keylines = [
+                keyline for keyline in geometry.keylines if keyline.shape == "circle"
+            ]
+            self.assertEqual(len(geometry.rings), 2)
+            self.assertEqual(len(circular_keylines), 1)
+            self.assertEqual(len(geometry.rings) + len(circular_keylines), 3)
+            self.assertEqual(
+                geometry.grid_bounds.as_tuple(),
+                (-4.0 * stem, -150.0 - 4.0 * stem, 1000.0 + 4.0 * stem, 850.0 + 4.0 * stem),
             )
 
     def test_rings_are_true_circles_centered_in_rectangular_canvas(self):
@@ -449,6 +519,61 @@ class GeometryTests(unittest.TestCase):
         self.assertEqual(hit_test_guides(geometry, (0, 0), -1), ())
         self.assertEqual(hit_test_guides(geometry, (0, 0), math.inf), ())
 
+    def test_batched_hit_testing_matches_the_union_of_single_points(self):
+        geometry = build_geometry(
+            1000,
+            self.config(
+                width=1000,
+                height=1000,
+                columns=10,
+                rows=10,
+                padding=1,
+                rings=4,
+                spokes=8,
+                showKeylines=True,
+                origin="bottom-left",
+                gridMode="even",
+            ),
+        )
+        points = ((300.0, 300.0), (900.0, 500.0), (500.0, 860.0))
+        expected = set()
+        for point in points:
+            expected.update(hit_test_guides(geometry, point, 0.001))
+
+        catalog = build_guide_catalog(geometry)
+        self.assertIsInstance(catalog, tuple)
+        self.assertEqual(
+            set(hit_test_guide_catalog(catalog, points, 0.001)),
+            expected,
+        )
+        self.assertEqual(
+            set(hit_test_guides_for_points(geometry, points, 0.001)),
+            expected,
+        )
+
+    def test_batched_hit_testing_is_bounded_before_catalog_scanning(self):
+        geometry = build_geometry(
+            1000,
+            self.config(
+                width=1000,
+                height=1000,
+                columns=10,
+                rows=10,
+                rings=0,
+                spokes=0,
+                showKeylines=False,
+                origin="bottom-left",
+                gridMode="even",
+            ),
+        )
+        catalog = build_guide_catalog(geometry)
+        points = tuple((200.0, float(index)) for index in range(65))
+        self.assertTrue(hit_test_guide_catalog(catalog, points[:64], 0.001))
+        self.assertEqual(
+            hit_test_guide_catalog(catalog, points, 0.001, max_points=64),
+            (),
+        )
+
     def test_snapshot_is_deterministic(self):
         geometry = build_geometry(
             240,
@@ -462,8 +587,8 @@ class GeometryTests(unittest.TestCase):
         )
         self.assertEqual(snapshot(geometry), snapshot(geometry))
         self.assertEqual(snapshot(geometry)["canvas"], [0.0, 0.0, 240.0, 240.0])
-        self.assertEqual(snapshot(geometry)["gridBounds"], [-10.0, -10.0, 250.0, 250.0])
-        self.assertEqual(len(snapshot(geometry)["rings"]), 10)
+        self.assertEqual(snapshot(geometry)["gridBounds"], [-40.0, -40.0, 280.0, 280.0])
+        self.assertEqual(len(snapshot(geometry)["rings"]), 2)
 
     def test_non_positive_width_is_a_safe_noop(self):
         self.assertIsNone(build_geometry(0, self.config()))

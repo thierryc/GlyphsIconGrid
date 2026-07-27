@@ -7,7 +7,7 @@ fontMaster = (
 customParameters = (
 {
 name = IconGrid.gridSize;
-value = 34;
+value = 84;
 }
 );
 id = regular;
@@ -18,7 +18,7 @@ name = Regular;
 customParameters = (
 {
 name = IconGrid.gridSize;
-value = 72;
+value = 135;
 }
 );
 id = bold;

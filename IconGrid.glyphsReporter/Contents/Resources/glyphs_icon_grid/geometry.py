@@ -425,31 +425,76 @@ def _guide_catalog(geometry):
             yield GuideRef(kind, index), primitive, signature, distance
 
 
-def hit_test_guides(geometry, point, tolerance):
-    """Return stable visible-guide references within a glyph-unit tolerance."""
+def build_guide_catalog(geometry):
+    """Return an immutable, visually deduplicated guide hit-test catalog."""
+
     if geometry is None:
         return ()
-    resolved_point = _finite_point(point)
-    try:
-        resolved_tolerance = float(tolerance)
-    except (TypeError, ValueError, OverflowError):
-        return ()
-    if (
-        resolved_point is None
-        or not math.isfinite(resolved_tolerance)
-        or resolved_tolerance < 0
-    ):
-        return ()
 
-    hits = []
+    catalog = []
     seen = set()
     for reference, primitive, signature, distance in _guide_catalog(geometry):
         if signature in seen:
             continue
-        if distance(resolved_point, primitive) <= resolved_tolerance + _EPSILON:
+        catalog.append((reference, primitive, distance))
+        seen.add(signature)
+    return tuple(catalog)
+
+
+def hit_test_guide_catalog(catalog, points, tolerance, max_points=None):
+    """Return catalog references near any finite point, bounded when requested."""
+
+    try:
+        resolved_tolerance = float(tolerance)
+    except (TypeError, ValueError, OverflowError):
+        return ()
+    if not math.isfinite(resolved_tolerance) or resolved_tolerance < 0:
+        return ()
+
+    resolved_points = []
+    seen_points = set()
+    try:
+        candidates = iter(points)
+    except TypeError:
+        return ()
+    for point in candidates:
+        resolved_point = _finite_point(point)
+        if resolved_point is None or resolved_point in seen_points:
+            continue
+        resolved_points.append(resolved_point)
+        seen_points.add(resolved_point)
+        if max_points is not None and len(resolved_points) > max_points:
+            return ()
+    if not resolved_points:
+        return ()
+
+    hits = []
+    threshold = resolved_tolerance + _EPSILON
+    try:
+        entries = iter(catalog)
+    except TypeError:
+        return ()
+    for reference, primitive, distance in entries:
+        if any(distance(point, primitive) <= threshold for point in resolved_points):
             hits.append(reference)
-            seen.add(signature)
     return tuple(hits)
+
+
+def hit_test_guides_for_points(geometry, points, tolerance, max_points=None):
+    """Return visible-guide references near any point without rescanning the catalog."""
+
+    return hit_test_guide_catalog(
+        build_guide_catalog(geometry),
+        points,
+        tolerance,
+        max_points=max_points,
+    )
+
+
+def hit_test_guides(geometry, point, tolerance):
+    """Return stable visible-guide references within a glyph-unit tolerance."""
+
+    return hit_test_guides_for_points(geometry, (point,), tolerance)
 
 
 def _round(value):
