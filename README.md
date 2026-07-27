@@ -1,7 +1,6 @@
 # GlyphsIconGrid
 
-[![Tests](https://github.com/thierryc/GlyphsIconGrid/actions/workflows/test.yml/badge.svg)](https://github.com/thierryc/GlyphsIconGrid/actions/workflows/test.yml)
-[![Pages](https://github.com/thierryc/GlyphsIconGrid/actions/workflows/pages.yml/badge.svg)](https://thierryc.github.io/GlyphsIconGrid/)
+[![Website](https://img.shields.io/badge/Website-GlyphsIconGrid-0a84ff)](https://thierryc.github.io/GlyphsIconGrid/)
 [![Glyphs 3.5 and 4](https://img.shields.io/badge/Glyphs-3.5%20and%204-7c4dff)](https://glyphsapp.com/)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 
@@ -94,7 +93,7 @@ python3 scripts/validate.py IconGrid.glyphsReporter --target both
 python3 scripts/package.py
 ```
 
-CI runs the unit, compile, static bundle, dual-target, and packaging checks. Live UI behavior is covered separately by the release checklist. The tracked fixture at `tests/fixtures/IconGrid-Test.glyphs` contains the `/lightbulb` artwork and two masters used by the documentation and manual tests.
+Run the unit, compile, static bundle, dual-target, packaging, and site-build checks locally before publishing. Live UI behavior is covered separately by the release checklist. The tracked fixture at `tests/fixtures/IconGrid-Test.glyphs` contains the `/lightbulb` artwork and two masters used by the documentation and manual tests.
 
 ## License and attribution
 

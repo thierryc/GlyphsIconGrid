@@ -23,14 +23,31 @@ Do not treat static validation as proof of live compatibility. Do not tag while 
 
 ## 3. Publish
 
-Merge the reviewed release branch to `main`, wait for CI and Pages to pass, and verify the public update plist. Create an annotated tag on that exact commit:
+Merge the reviewed release branch to `main`. Rebuild the site locally, publish
+the exact `build/site` output to the `gh-pages` branch, and configure GitHub
+Pages to serve `/` from that branch. Verify the public update plist after the
+branch deployment finishes.
+
+Create an annotated tag on the exact validated source commit:
 
 ```sh
 git tag -a v0.1.1 -m "GlyphsIconGrid 0.1.1"
 git push origin v0.1.1
 ```
 
-The tag workflow rebuilds the archive, verifies the tag/version contract, and creates the GitHub release. Verify the release ZIP and SHA-256 asset after the workflow completes.
+Create the release from the locally validated archive:
+
+```sh
+gh release create v0.1.1 \
+  dist/GlyphsIconGrid-0.1.1.zip \
+  dist/GlyphsIconGrid-0.1.1.zip.sha256 \
+  --verify-tag \
+  --title "GlyphsIconGrid 0.1.1" \
+  --notes-file docs/releases/0.1.1.md
+```
+
+Verify the published ZIP and SHA-256 assets after upload. GitHub Actions are not
+part of this release process.
 
 ## 4. Package directory
 
