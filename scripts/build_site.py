@@ -15,7 +15,8 @@ REQUIRED_IMAGES = (
     "icon-grid-overview.png",
     "show-icon-grid-menu.png",
     "default-metrics.png",
-    "odd-even-grid.png",
+    "odd-grid.png",
+    "even-grid.png",
     "glyphs-mcp-edit-profile.png",
 )
 

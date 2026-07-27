@@ -96,7 +96,8 @@ class DocumentationTests(unittest.TestCase):
             "font-info-grid-size.png": (1200, 800),
             "regular-bold-grid.png": (1600, 900),
             "default-metrics.png": (1530, 424),
-            "odd-even-grid.png": (1600, 900),
+            "odd-grid.png": (1600, 1026),
+            "even-grid.png": (1600, 1026),
             "glyphs-mcp-edit-profile.png": (1200, 800),
         }
         for filename, dimensions in expected.items():
@@ -135,8 +136,11 @@ class DocumentationTests(unittest.TestCase):
         )
         self.assertNotIn("python3 scripts/install_skill.py", source)
         self.assertNotIn("~/.codex/skills", source)
+        self.assertIn("assets/images/odd-grid.png", source)
+        self.assertIn("assets/images/even-grid.png", source)
+        self.assertNotIn("assets/images/odd-even-grid.png", source)
         image_tags = re.findall(r"<img\s+[^>]*>", source)
-        self.assertEqual(len(image_tags), 5)
+        self.assertEqual(len(image_tags), 6)
         for tag in image_tags:
             self.assertRegex(tag, r'alt="[^"]+"')
             source_path = re.search(r'src="([^"]+)"', tag).group(1)
