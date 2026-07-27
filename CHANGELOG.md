@@ -1,11 +1,14 @@
 # Changelog
 
+## 0.1.1 — 2026-07-27
+
+- Prevents hover feedback from invalidating every Glyphs Edit and Preview view, preserving Glyphs 4 shape-tool previews during native drags.
+- Caches hover geometry and guide catalogs, rejects invalid scales, batches alignment hit testing, and suppresses cues above 64 moving nodes to protect main-app responsiveness.
+
 ## 0.1.0 — 2026-07-23
 
 First public release.
 
-- Build 2 prevents hover feedback from invalidating every Glyphs Edit and Preview view, preserving Glyphs 4 shape-tool previews during native drags.
-- Caches hover geometry and guide catalogs, rejects invalid scales, batches alignment hit testing, and suppresses cues above 64 moving nodes to protect main-app responsiveness.
 - Draws a fixed icon-construction canvas with square grid cells, concentric circles, radial spokes, live-area frames, and common icon keylines.
 - Uses a cell-centered `odd` grid by default and supports an optional line-centered `even` mode.
 - Uses the active master’s H stem for square-cell size and circular spacing, with explicit `IconGrid.gridSize` overrides when needed; the generic 1000-UPM icon scaffold starts at `84` for Regular and `135` for Bold.

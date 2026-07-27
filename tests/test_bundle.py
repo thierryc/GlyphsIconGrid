@@ -25,8 +25,8 @@ class BundleTests(unittest.TestCase):
         self.assertEqual(info["CFBundleIdentifier"], "com.thierryc.GlyphsIconGrid")
         self.assertEqual(info["CFBundleName"], "IconGrid")
         self.assertEqual(info["NSPrincipalClass"], "GlyphsIconGridReporter")
-        self.assertEqual(info["CFBundleShortVersionString"], "0.1.0")
-        self.assertEqual(info["CFBundleVersion"], "2")
+        self.assertEqual(info["CFBundleShortVersionString"], "0.1.1")
+        self.assertEqual(info["CFBundleVersion"], "3")
         self.assertEqual(
             info["productPageURL"], "https://thierryc.github.io/GlyphsIconGrid/"
         )

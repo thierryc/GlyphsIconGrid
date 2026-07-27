@@ -27,7 +27,7 @@ class ReleaseContractTests(unittest.TestCase):
 
     def test_release_contract_and_checksum(self):
         archive = package_script.main()
-        result = release_check.validate(tag="v0.1.0", require_artifacts=True)
+        result = release_check.validate(tag="v0.1.1", require_artifacts=True)
         self.assertTrue(result["ok"], result["errors"])
         self.assertTrue(os.path.isfile(archive + ".sha256"))
 

@@ -26,8 +26,8 @@ Do not treat static validation as proof of live compatibility. Do not tag while 
 Merge the reviewed release branch to `main`, wait for CI and Pages to pass, and verify the public update plist. Create an annotated tag on that exact commit:
 
 ```sh
-git tag -a v0.1.0 -m "GlyphsIconGrid 0.1.0"
-git push origin v0.1.0
+git tag -a v0.1.1 -m "GlyphsIconGrid 0.1.1"
+git push origin v0.1.1
 ```
 
 The tag workflow rebuilds the archive, verifies the tag/version contract, and creates the GitHub release. Verify the release ZIP and SHA-256 asset after the workflow completes.
