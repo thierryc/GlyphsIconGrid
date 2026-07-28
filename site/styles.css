@@ -384,7 +384,11 @@ main {
 }
 
 .mcp-status-shot img {
-  padding: clamp(14px, 2.4vw, 24px);
+  padding:
+    clamp(18px, 3vw, 32px)
+    clamp(18px, 3vw, 32px)
+    clamp(32px, 5vw, 56px)
+    clamp(32px, 5vw, 56px);
 }
 
 .shot-card figcaption {

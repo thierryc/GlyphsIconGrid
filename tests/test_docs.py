@@ -178,7 +178,16 @@ class DocumentationTests(unittest.TestCase):
         self.assertEqual(declarations["height"].strip(), "auto")
 
         mcp_rule = re.search(r"\.mcp-status-shot img\s*\{([^}]+)\}", source).group(1)
-        self.assertIn("padding: clamp(14px, 2.4vw, 24px)", mcp_rule)
+        self.assertRegex(
+            mcp_rule,
+            re.compile(
+                r"padding:\s*"
+                r"clamp\(18px, 3vw, 32px\)\s*"
+                r"clamp\(18px, 3vw, 32px\)\s*"
+                r"clamp\(32px, 5vw, 56px\)\s*"
+                r"clamp\(32px, 5vw, 56px\);"
+            ),
+        )
 
     def test_site_uses_apcx_page_tokens_and_semantic_key_values(self):
         stylesheet = os.path.join(ROOT, "site", "styles.css")
