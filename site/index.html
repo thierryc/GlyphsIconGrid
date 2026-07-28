@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://thierryc.github.io/GlyphsIconGrid/">
   <title>GlyphsIconGrid — construction grids for Glyphs</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=0.1.1-3">
+  <link rel="stylesheet" href="styles.css?v=0.1.1-4">
   <script src="site.js" defer></script>
 </head>
 <body>
@@ -40,8 +40,8 @@
         <h1>A construction grid that follows the weight of your icons.</h1>
         <p class="lede">Draw with a wide field of square cells, two useful inner circles, spokes, and metric-fitted keylines. Set one construction unit per master and keep the rest simple.</p>
         <div class="actions">
-          <a class="button primary" href="https://github.com/thierryc/GlyphsIconGrid/releases/latest">Download latest release</a>
-          <a class="button secondary" href="#install">Set it up</a>
+          <a class="button primary" href="#install">Install GlyphsIconGrid</a>
+          <a class="button secondary" href="https://github.com/thierryc/GlyphsIconGrid/releases/latest">Download release</a>
         </div>
         <dl class="hero-meta" aria-label="Plugin details">
           <div><dt>License</dt><dd>Apache-2.0</dd></div>
@@ -56,10 +56,26 @@
 
     <section class="section" id="install">
       <div class="section-heading">
-        <p class="eyebrow">Manual setup</p>
-        <h2>For people using Glyphs</h2>
-        <p>Download the release, unzip it, and double-click <code>IconGrid.glyphsReporter</code>. Restart Glyphs, open a glyph in Edit view, then choose <strong>View → Show Icon Grid</strong>. To update, install the newer bundle and restart; to uninstall, remove Icon Grid from Glyphs’ plug-in folder and restart.</p>
+        <p class="eyebrow">Install · official listing in progress</p>
+        <h2>Plugin Manager is the simplest option.</h2>
+        <p>The GlyphsIconGrid listing is being reviewed in the official Glyphs package repository. Once the pull request is merged, Plugin Manager will be the recommended way to install and update the plug-in.</p>
+        <div class="section-links">
+          <a class="button secondary" href="https://github.com/schriftgestalt/glyphs-packages/pull/206">Follow Plugin Manager PR #206</a>
+        </div>
       </div>
+      <div class="option-grid install-options" aria-label="GlyphsIconGrid installation options">
+        <article class="install-option recommended">
+          <p class="install-label">Recommended · PR in progress</p>
+          <h3>Install with Plugin Manager</h3>
+          <p>After the listing is published, open <strong>Window → Plugin Manager</strong>, search for <strong>GlyphsIconGrid</strong>, and click <strong>Install</strong>. Plugin Manager will also handle future updates.</p>
+        </article>
+        <article class="install-option">
+          <p class="install-label">Alternative</p>
+          <h3>Install the release manually</h3>
+          <p>If Plugin Manager is not available yet or you cannot use it, <a href="https://github.com/thierryc/GlyphsIconGrid/releases/latest">download the latest release</a>, unzip it, and double-click <code>IconGrid.glyphsReporter</code>.</p>
+        </article>
+      </div>
+      <p class="install-finish">After either installation method, restart Glyphs, open a glyph in Edit view, and choose <strong>View → Show Icon Grid</strong>.</p>
       <div class="shot-grid two">
         <figure class="shot-card">
           <img src="../docs/images/show-icon-grid-menu.png" width="1200" height="800" alt="Glyphs View menu with Show Icon Grid enabled.">

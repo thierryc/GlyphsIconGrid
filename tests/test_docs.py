@@ -117,6 +117,17 @@ class DocumentationTests(unittest.TestCase):
         self.assertIn('id="install"', source)
         self.assertIn('id="configure"', source)
         self.assertIn('id="mcp"', source)
+        self.assertIn("Plugin Manager is the simplest option.", source)
+        self.assertIn("Recommended · PR in progress", source)
+        self.assertIn("Follow Plugin Manager PR #206", source)
+        self.assertIn(
+            'href="https://github.com/schriftgestalt/glyphs-packages/pull/206"',
+            source,
+        )
+        self.assertIn(
+            "If Plugin Manager is not available yet or you cannot use it",
+            source,
+        )
         self.assertIn("Regular · 84", source)
         self.assertIn("Bold · 135", source)
         self.assertIn("875 units at the default cap height", source)

@@ -475,6 +475,38 @@ main {
   line-height: 1.55;
 }
 
+.install-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: clamp(18px, 2.5vw, 28px);
+}
+
+.install-option.recommended {
+  border-color: color-mix(in oklab, var(--accent) 48%, var(--border));
+  background: color-mix(in oklab, var(--accent) 7%, var(--surface-2));
+}
+
+.option-grid .install-label {
+  color: var(--text);
+  font-size: 0.74rem;
+  font-weight: 720;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  opacity: 0.58;
+  text-transform: uppercase;
+}
+
+.install-options a {
+  text-underline-offset: 0.18em;
+}
+
+.install-finish {
+  max-width: 72ch;
+  margin: 0 0 clamp(24px, 3.5vw, 42px);
+  color: color-mix(in oklab, var(--text) 92%, var(--muted));
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
 .centered-link {
   margin: 24px 0 0;
   font-weight: 650;
