@@ -383,6 +383,14 @@ main {
   background: var(--surface-2);
 }
 
+.mcp-status-shot img {
+  padding:
+    clamp(18px, 3vw, 32px)
+    clamp(18px, 3vw, 32px)
+    clamp(32px, 5vw, 56px)
+    clamp(32px, 5vw, 56px);
+}
+
 .shot-card figcaption {
   padding: 12px 14px;
   border-top: 1px solid var(--border);
