@@ -18,6 +18,7 @@ MACOS_SKILL_INSTALLER = os.path.join(
     ROOT, "scripts", "Install GlyphsIconGrid Skill.command"
 )
 MACOS_SKILL_INSTALLER_NAME = "Install GlyphsIconGrid Skill.command"
+STANDALONE_SKILL_ARCHIVE_NAME = "GlyphsIconGrid-Skill.zip"
 
 
 def _write_file(archive, path, relative):
@@ -40,6 +41,33 @@ def _write_tree(archive, source):
             _write_file(archive, path, os.path.relpath(path, ROOT))
 
 
+def _write_checksum(output):
+    with open(output, "rb") as handle:
+        digest = hashlib.sha256(handle.read()).hexdigest()
+    checksum = output + ".sha256"
+    with open(checksum, "w", encoding="ascii", newline="\n") as handle:
+        handle.write("{}  {}\n".format(digest, os.path.basename(output)))
+    return checksum
+
+
+def build_standalone_skill(output_directory):
+    output = os.path.join(output_directory, STANDALONE_SKILL_ARCHIVE_NAME)
+    if os.path.exists(output):
+        os.unlink(output)
+    with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        _write_file(
+            archive,
+            MACOS_SKILL_INSTALLER,
+            MACOS_SKILL_INSTALLER_NAME,
+        )
+        _write_tree(archive, SKILL)
+        for filename in ("LICENSE", "NOTICE"):
+            path = os.path.join(ROOT, filename)
+            _write_file(archive, path, filename)
+    _write_checksum(output)
+    return output
+
+
 def main():
     with open(os.path.join(BUNDLE, "Contents", "Info.plist"), "rb") as handle:
         version = plistlib.load(handle)["CFBundleShortVersionString"]
@@ -59,12 +87,10 @@ def main():
         for filename in ("LICENSE", "NOTICE"):
             path = os.path.join(ROOT, filename)
             _write_file(archive, path, filename)
-    with open(output, "rb") as handle:
-        digest = hashlib.sha256(handle.read()).hexdigest()
-    checksum = output + ".sha256"
-    with open(checksum, "w", encoding="ascii", newline="\n") as handle:
-        handle.write("{}  {}\n".format(digest, os.path.basename(output)))
+    _write_checksum(output)
+    standalone_skill = build_standalone_skill(output_directory)
     print(output)
+    print(standalone_skill)
     return output
 
 

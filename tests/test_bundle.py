@@ -94,6 +94,31 @@ class BundleTests(unittest.TestCase):
         self.assertIn("NOTICE", names)
         self.assertTrue(os.path.isfile(output + ".sha256"))
 
+    def test_standalone_skill_archive_excludes_plugin_bundle(self):
+        package_script.main()
+        output = os.path.join(
+            ROOT,
+            "dist",
+            package_script.STANDALONE_SKILL_ARCHIVE_NAME,
+        )
+        with zipfile.ZipFile(output, "r") as archive:
+            names = set(archive.namelist())
+            installer = archive.getinfo("Install GlyphsIconGrid Skill.command")
+        self.assertEqual(
+            names,
+            {
+                "Install GlyphsIconGrid Skill.command",
+                "LICENSE",
+                "NOTICE",
+                "skills/glyphs-mcp-icon-grid/SKILL.md",
+                "skills/glyphs-mcp-icon-grid/agents/openai.yaml",
+                "skills/glyphs-mcp-icon-grid/references/parameters.md",
+                "skills/glyphs-mcp-icon-grid/references/release-verification.md",
+            },
+        )
+        self.assertEqual((installer.external_attr >> 16) & 0o777, 0o755)
+        self.assertTrue(os.path.isfile(output + ".sha256"))
+
     def test_macos_skill_installer_is_self_contained_and_python_free(self):
         path = os.path.join(ROOT, "scripts", "Install GlyphsIconGrid Skill.command")
         self.assertTrue(os.access(path, os.X_OK))

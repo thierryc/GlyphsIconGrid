@@ -59,7 +59,7 @@ Every release includes the distributable [`glyphs-mcp-icon-grid` skill](skills/g
 
 Connect the Glyphs MCP **Edit** profile and verify the target font before changing it. The [Glyphs MCP guide](docs/GLYPHS_MCP.md) covers installation, safe calls, inheritance, and example prompts.
 
-On a Mac, download and unzip the release, then double-click `Install GlyphsIconGrid Skill.command`. Choose the shared location for Codex, Gemini, and Cursor; choose Claude for `~/.claude/skills`; or install both. The installer uses built-in macOS tools, requires no repository checkout or Python installation, and keeps a dated backup before replacing an existing copy.
+On a Mac, download the standalone [GlyphsIconGrid AI skill ZIP](https://github.com/thierryc/GlyphsIconGrid/releases/latest/download/GlyphsIconGrid-Skill.zip), unzip it, and double-click `Install GlyphsIconGrid Skill.command`. Choose the shared location for Codex, Gemini, and Cursor; choose Claude for `~/.claude/skills`; or install both. The installer uses built-in macOS tools, requires no repository checkout or Python installation, and keeps a dated backup before replacing an existing copy. The same installer and skill remain included in the full plug-in release ZIP.
 
 For a source checkout, the command-line helper remains available:
 

@@ -13,7 +13,7 @@ python3 scripts/release_check.py --require-artifacts
 python3 scripts/build_site.py
 ```
 
-Review the ZIP contents and checksum. Confirm that it contains the plug-in bundle, the complete `skills/glyphs-mcp-icon-grid` directory, and the executable `Install GlyphsIconGrid Skill.command`. Confirm that the version in the bundle, update plist, changelog, release notes, and intended tag agree.
+Review both ZIPs and their checksums. Confirm that the main archive contains the plug-in bundle, complete `skills/glyphs-mcp-icon-grid` directory, and executable `Install GlyphsIconGrid Skill.command`. Confirm that `GlyphsIconGrid-Skill.zip` contains only the complete skill, installer, license, and notice. Confirm that the version in the bundle, update plist, changelog, release notes, and intended tag agree.
 
 ## 2. Live gate
 
@@ -41,12 +41,14 @@ Create the release from the locally validated archive:
 gh release create v0.1.1 \
   dist/GlyphsIconGrid-0.1.1.zip \
   dist/GlyphsIconGrid-0.1.1.zip.sha256 \
+  dist/GlyphsIconGrid-Skill.zip \
+  dist/GlyphsIconGrid-Skill.zip.sha256 \
   --verify-tag \
   --title "GlyphsIconGrid 0.1.1" \
   --notes-file docs/releases/0.1.1.md
 ```
 
-Verify the published ZIP and SHA-256 assets after upload. GitHub Actions are not
+Verify both published ZIPs and their SHA-256 assets after upload. GitHub Actions are not
 part of this release process.
 
 ## 4. Package directory
