@@ -11,13 +11,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SOURCE = os.path.join(ROOT, "site")
 SCREENSHOTS = os.path.join(ROOT, "docs", "images")
 OUTPUT = os.path.join(ROOT, "build", "site")
+SOURCE_IMAGE_PREFIX = "../docs/images/"
+PUBLISHED_IMAGE_PREFIX = "assets/images/"
 REQUIRED_IMAGES = (
     "icon-grid-overview.png",
     "show-icon-grid-menu.png",
     "default-metrics.png",
     "odd-grid.png",
     "even-grid.png",
-    "glyphs-mcp-edit-profile.png",
+    "glyphs-mcp-edit-profile-1.4.png",
 )
 
 
@@ -36,6 +38,12 @@ def main():
         OUTPUT,
         ignore=shutil.ignore_patterns("assets"),
     )
+    index_path = os.path.join(OUTPUT, "index.html")
+    with open(index_path, "r", encoding="utf-8") as index_file:
+        index_html = index_file.read()
+    index_html = index_html.replace(SOURCE_IMAGE_PREFIX, PUBLISHED_IMAGE_PREFIX)
+    with open(index_path, "w", encoding="utf-8") as index_file:
+        index_file.write(index_html)
     destination = os.path.join(OUTPUT, "assets", "images")
     os.makedirs(destination, exist_ok=True)
     for name in REQUIRED_IMAGES:

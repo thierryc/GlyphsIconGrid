@@ -98,7 +98,7 @@ class DocumentationTests(unittest.TestCase):
             "default-metrics.png": (1530, 424),
             "odd-grid.png": (1600, 1026),
             "even-grid.png": (1600, 1026),
-            "glyphs-mcp-edit-profile.png": (1200, 800),
+            "glyphs-mcp-edit-profile-1.4.png": (828, 740),
         }
         for filename, dimensions in expected.items():
             path = os.path.join(ROOT, "docs", "images", filename)
@@ -151,6 +151,18 @@ class DocumentationTests(unittest.TestCase):
             set(build_site.REQUIRED_IMAGES),
         )
 
+    def test_site_source_images_resolve_without_generated_assets(self):
+        index = os.path.join(ROOT, "site", "index.html")
+        with open(index, "r", encoding="utf-8") as handle:
+            source = handle.read()
+        image_sources = re.findall(r'<img\s+[^>]*src="([^"]+)"', source)
+        self.assertEqual(len(image_sources), len(build_site.REQUIRED_IMAGES))
+        for source_path in image_sources:
+            self.assertTrue(source_path.startswith("../docs/images/"))
+            self.assertTrue(
+                os.path.isfile(os.path.normpath(os.path.join(os.path.dirname(index), source_path)))
+            )
+
     def test_site_screenshots_preserve_their_intrinsic_aspect_ratio(self):
         stylesheet = os.path.join(ROOT, "site", "styles.css")
         with open(stylesheet, "r", encoding="utf-8") as handle:
@@ -164,6 +176,9 @@ class DocumentationTests(unittest.TestCase):
         self.assertEqual(declarations["width"].strip(), "auto")
         self.assertEqual(declarations["max-width"].strip(), "100%")
         self.assertEqual(declarations["height"].strip(), "auto")
+
+        mcp_rule = re.search(r"\.mcp-status-shot img\s*\{([^}]+)\}", source).group(1)
+        self.assertIn("padding: clamp(14px, 2.4vw, 24px)", mcp_rule)
 
     def test_site_uses_apcx_page_tokens_and_semantic_key_values(self):
         stylesheet = os.path.join(ROOT, "site", "styles.css")
