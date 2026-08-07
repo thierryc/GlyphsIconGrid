@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://thierryc.github.io/GlyphsIconGrid/">
   <title>GlyphsIconGrid — construction grids for Glyphs</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=0.1.1-3">
+  <link rel="stylesheet" href="styles.css?v=0.2.0-4">
   <script src="site.js" defer></script>
 </head>
 <body>
@@ -40,8 +40,8 @@
         <h1>A construction grid that follows the weight of your icons.</h1>
         <p class="lede">Draw with a wide field of square cells, two useful inner circles, spokes, and metric-fitted keylines. Set one construction unit per master and keep the rest simple.</p>
         <div class="actions">
-          <a class="button primary" href="https://github.com/thierryc/GlyphsIconGrid/releases/latest">Download latest release</a>
-          <a class="button secondary" href="#install">Set it up</a>
+          <a class="button primary" href="#install">Install GlyphsIconGrid</a>
+          <a class="button secondary" href="https://github.com/thierryc/GlyphsIconGrid/releases/latest">Download release</a>
         </div>
         <dl class="hero-meta" aria-label="Plugin details">
           <div><dt>License</dt><dd>Apache-2.0</dd></div>
@@ -56,10 +56,26 @@
 
     <section class="section" id="install">
       <div class="section-heading">
-        <p class="eyebrow">Manual setup</p>
-        <h2>For people using Glyphs</h2>
-        <p>Download the release, unzip it, and double-click <code>IconGrid.glyphsReporter</code>. Restart Glyphs, open a glyph in Edit view, then choose <strong>View → Show Icon Grid</strong>. To update, install the newer bundle and restart; to uninstall, remove Icon Grid from Glyphs’ plug-in folder and restart.</p>
+        <p class="eyebrow">Install · official listing in progress</p>
+        <h2>Plugin Manager is the simplest option.</h2>
+        <p>The GlyphsIconGrid listing is being reviewed in the official Glyphs package repository. Once the pull request is merged, Plugin Manager will be the recommended way to install and update the plug-in.</p>
+        <div class="section-links">
+          <a class="button secondary" href="https://github.com/schriftgestalt/glyphs-packages/pull/206">Follow Plugin Manager PR #206</a>
+        </div>
       </div>
+      <div class="option-grid install-options" aria-label="GlyphsIconGrid installation options">
+        <article class="install-option recommended">
+          <p class="install-label">Recommended · PR in progress</p>
+          <h3>Install with Plugin Manager</h3>
+          <p>After the listing is published, open <strong>Window → Plugin Manager</strong>, search for <strong>GlyphsIconGrid</strong>, and click <strong>Install</strong>. Plugin Manager will also handle future updates.</p>
+        </article>
+        <article class="install-option">
+          <p class="install-label">Alternative</p>
+          <h3>Install the release manually</h3>
+          <p>If Plugin Manager is not available yet or you cannot use it, <a href="https://github.com/thierryc/GlyphsIconGrid/releases/latest">download the latest release</a>, unzip it, and double-click <code>IconGrid.glyphsReporter</code>.</p>
+        </article>
+      </div>
+      <p class="install-finish">After either installation method, restart Glyphs, open a glyph in Edit view, and choose <strong>View → Show Icon Grid</strong>.</p>
       <div class="shot-grid two">
         <figure class="shot-card">
           <img src="assets/images/show-icon-grid-menu.png" width="1200" height="800" alt="Glyphs View menu with Show Icon Grid enabled.">
@@ -81,7 +97,8 @@
           <div aria-label="Regular · 84 font units"><dt>Regular</dt><dd><strong>84</strong><small>H stem</small></dd></div>
           <div aria-label="Bold · 135 font units"><dt>Bold</dt><dd><strong>135</strong><small>H stem</small></dd></div>
         </dl>
-        <p>These values come from the generic icon scaffold and are starting points. Use measured H stems for an existing design. For any master, <code>x = (cap height − baseline) / H stem</code>. The live diameter is <code>(cap height − baseline) / 0.8</code>: 875 units at the default cap height, making the landscape keyline span exactly from baseline to cap height.</p>
+        <p>These values come from the generic icon scaffold and are starting points. Use measured H stems for an existing design. For any master, <code>x = (cap height − baseline) / H stem</code>. Define Mid Height under <strong>Font Info → Masters → Metrics</strong> when the family has a master-specific construction center. When an unfiltered native Mid Height exists, the complete construction system centers on that position; otherwise it uses the baseline/cap-height midpoint. Mid Height overshoot is ignored, and an explicit <code>IconGrid.baselineOffset</code> still wins.</p>
+        <p>The live diameter remains <code>(cap height − baseline) / 0.8</code>: 875 units at the default cap height. The landscape keyline spans baseline to cap height when their midpoint is the construction center; a distinct Mid Height moves it without resizing it.</p>
       </div>
     </section>
 
@@ -113,7 +130,7 @@
         <article><h3>Normal setup</h3><p>Use each master’s H stem. Set <code>gridSize</code> only for an intentional override.</p></article>
         <article><h3>Optional guides</h3><p>The live area fits the cap height automatically. Store padding only for a custom cell-based inset; cadence, spokes, and keylines already have useful defaults.</p></article>
         <article><h3>Appearance</h3><p>Color and opacity, with a blue default that stays distinct from Glyphs guides.</p></article>
-        <article><h3>Advanced layout</h3><p>Width, height, columns, rows, rings, origin, and baseline offset remain available for custom canvases.</p></article>
+        <article><h3>Automatic placement</h3><p>Use each master's native Mid Height when available. Width, height, columns, rows, rings, origin, and baseline offset remain available for custom canvases.</p></article>
       </div>
       <p class="centered-link"><a href="https://github.com/thierryc/GlyphsIconGrid/blob/main/docs/PARAMETERS.md">Read the plain-language parameter guide →</a></p>
     </section>
