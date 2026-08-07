@@ -31,21 +31,21 @@ branch deployment finishes.
 Create an annotated tag on the exact validated source commit:
 
 ```sh
-git tag -a v0.1.1 -m "GlyphsIconGrid 0.1.1"
-git push origin v0.1.1
+git tag -a v0.2.0 -m "GlyphsIconGrid 0.2.0"
+git push origin v0.2.0
 ```
 
 Create the release from the locally validated archive:
 
 ```sh
-gh release create v0.1.1 \
-  dist/GlyphsIconGrid-0.1.1.zip \
-  dist/GlyphsIconGrid-0.1.1.zip.sha256 \
+gh release create v0.2.0 \
+  dist/GlyphsIconGrid-0.2.0.zip \
+  dist/GlyphsIconGrid-0.2.0.zip.sha256 \
   dist/GlyphsIconGrid-Skill.zip \
   dist/GlyphsIconGrid-Skill.zip.sha256 \
   --verify-tag \
-  --title "GlyphsIconGrid 0.1.1" \
-  --notes-file docs/releases/0.1.1.md
+  --title "GlyphsIconGrid 0.2.0" \
+  --notes-file docs/releases/0.2.0.md
 ```
 
 Verify both published ZIPs and their SHA-256 assets after upload. GitHub Actions are not

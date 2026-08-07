@@ -12,7 +12,7 @@
   <meta property="og:url" content="https://thierryc.github.io/GlyphsIconGrid/">
   <title>GlyphsIconGrid — construction grids for Glyphs</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=0.1.1-4">
+  <link rel="stylesheet" href="styles.css?v=0.2.0-4">
   <script src="site.js" defer></script>
 </head>
 <body>
@@ -97,7 +97,8 @@
           <div aria-label="Regular · 84 font units"><dt>Regular</dt><dd><strong>84</strong><small>H stem</small></dd></div>
           <div aria-label="Bold · 135 font units"><dt>Bold</dt><dd><strong>135</strong><small>H stem</small></dd></div>
         </dl>
-        <p>These values come from the generic icon scaffold and are starting points. Use measured H stems for an existing design. For any master, <code>x = (cap height − baseline) / H stem</code>. The live diameter is <code>(cap height − baseline) / 0.8</code>: 875 units at the default cap height, making the landscape keyline span exactly from baseline to cap height.</p>
+        <p>These values come from the generic icon scaffold and are starting points. Use measured H stems for an existing design. For any master, <code>x = (cap height − baseline) / H stem</code>. Define Mid Height under <strong>Font Info → Masters → Metrics</strong> when the family has a master-specific construction center. When an unfiltered native Mid Height exists, the complete construction system centers on that position; otherwise it uses the baseline/cap-height midpoint. Mid Height overshoot is ignored, and an explicit <code>IconGrid.baselineOffset</code> still wins.</p>
+        <p>The live diameter remains <code>(cap height − baseline) / 0.8</code>: 875 units at the default cap height. The landscape keyline spans baseline to cap height when their midpoint is the construction center; a distinct Mid Height moves it without resizing it.</p>
       </div>
     </section>
 
@@ -129,7 +130,7 @@
         <article><h3>Normal setup</h3><p>Use each master’s H stem. Set <code>gridSize</code> only for an intentional override.</p></article>
         <article><h3>Optional guides</h3><p>The live area fits the cap height automatically. Store padding only for a custom cell-based inset; cadence, spokes, and keylines already have useful defaults.</p></article>
         <article><h3>Appearance</h3><p>Color and opacity, with a blue default that stays distinct from Glyphs guides.</p></article>
-        <article><h3>Advanced layout</h3><p>Width, height, columns, rows, rings, origin, and baseline offset remain available for custom canvases.</p></article>
+        <article><h3>Automatic placement</h3><p>Use each master's native Mid Height when available. Width, height, columns, rows, rings, origin, and baseline offset remain available for custom canvases.</p></article>
       </div>
       <p class="centered-link"><a href="https://github.com/thierryc/GlyphsIconGrid/blob/main/docs/PARAMETERS.md">Read the plain-language parameter guide →</a></p>
     </section>

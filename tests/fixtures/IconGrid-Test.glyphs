@@ -20,6 +20,9 @@ pos = 700;
 pos = 500;
 },
 {
+pos = 353;
+},
+{
 },
 {
 pos = -200;
@@ -45,6 +48,9 @@ pos = 700;
 },
 {
 pos = 500;
+},
+{
+pos = 353;
 },
 {
 },
@@ -2729,6 +2735,9 @@ type = "cap height";
 },
 {
 type = "x-height";
+},
+{
+type = midHeight;
 },
 {
 type = baseline;

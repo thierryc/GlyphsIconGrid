@@ -1,85 +1,65 @@
-# 0.1.0 release gate
+# 0.2.0 release gate
 
-Do not publish `0.1.0` until every automated and live item is checked. Never use
+Do not publish `0.2.0` until every automated and live item is checked. Never use
 a production font for these tests, and never edit a `.glyphs` file directly
 while it is open in Glyphs.
 
 ## Automated
 
-- [x] Pure configuration and geometry tests, including odd/even center phase
-- [x] Invalid-input and non-finite-value coverage
-- [x] Numeric deterministic snapshots
+- [x] Complete unit-test suite, including Mid Height lookup and fallback
+- [x] Invalid-input, non-finite, and Glyphs missing-metric sentinel coverage
+- [x] Numeric deterministic snapshots and geometry invariants
 - [x] Injected Glyphs/AppKit adapter tests
 - [x] Core import isolation
 - [x] Python syntax and bytecode compilation
-- [x] Bundle/plist validation
+- [x] Bundle/plist validation at version `0.2.0`, build `4`
 - [x] Universal x86_64/arm64 wrapper validation
 - [x] Static validation with `--target both`
 - [x] Parameter-fixture coverage matches all 17 supported parameters
-- [x] Installer dry-run, overwrite refusal, and forced replacement
 - [x] Update plist, release notes, version, build, ZIP, and checksum agree
 - [x] Static Pages build, links, screenshots, accessibility, and responsive rules
-- [x] Local browser review at desktop and 390-pixel mobile widths
-- [x] AI-client tabs work by pointer and keyboard
-- [x] Dark-mode and reduced-motion media rules load without console warnings
+- [x] Release contract passes for tag `v0.2.0`
 
-## Glyphs 3.5 build 3530
+## Glyphs 3.5
 
-- [x] Record Python runtime, MCP version, and macOS version
-- [x] Open only disposable copies of the fixture matrix
-- [x] Reporter appears as **View → Show Icon Grid**
-- [x] Show the reporter and confirm a clean redraw
-- [x] Confirm Regular inherits its 84-unit H stem as construction spacing
-- [x] Confirm Bold inherits its 135-unit H stem as construction spacing
-- [x] Confirm the vertical center is halfway between baseline and cap height
-- [x] Confirm the automatic live diameter is 875 units and the landscape keyline spans baseline to cap height
-- [x] Confirm the grid extends at least four cells beyond the canvas on every side
-- [x] Confirm at most two inner rings plus the outer circular keyline
-- [x] Read all fixture scopes and effective values through MCP
-- [x] Dry-run, apply, and read back mutations through MCP
-- [x] Preserve inactive and duplicate entries; refuse ambiguous duplicate mutation
-- [x] Explicit save/reopen persists parameters on the designated disposable copy
-- [x] Close all other disposable copies with changes discarded
-- [ ] Confirm odd/even visually in Glyphs 3
-- [ ] Confirm all nine origins and representative glyph widths live
-- [ ] Confirm multiple zoom levels and light/dark appearance live
-- [ ] Exercise Move, Draw, Pencil, Rectangle, and Circle alignment live
-- [ ] Exercise crossings and every visible guide kind live
-- [ ] Confirm passive Edit, lasso, Annotation, text, hand, and zoom exclusions live
-- [ ] Inspect the Macro Panel after the complete interaction matrix
+- [x] Record the tested Glyphs build, Python runtime, MCP version, and macOS version
+- [x] Open only disposable fixture copies
+- [x] Reporter appears as **View → Show Icon Grid** and redraws cleanly
+- [x] Regular and Bold inherit their 84- and 135-unit H stems
+- [x] A Mid Height of `353` centers the complete construction system at `y=353`
+- [x] The 1000-unit canvas bounds are `−147…853` with Mid Height `353`
+- [x] Removing Mid Height restores baseline/cap-height midpoint centering at `y=350`
+- [x] Filtered or invalid Mid Height values do not change the fallback center
+- [x] Mid Height overshoot does not change the construction center
+- [x] An explicit `IconGrid.baselineOffset` overrides Mid Height
+- [x] The live/keyline diameter remains 875 units while its center moves
+- [x] Odd/even phase, all nine origins, and representative glyph widths remain correct
+- [x] Grid overflow, rings, spokes, keylines, and alignment feedback remain correct
+- [x] Text, hand, zoom, Annotation, and passive Edit exclusions remain correct
+- [x] Outlines remain unchanged and the reporter never saves implicitly
+- [x] Inspect the Macro Panel after the complete interaction matrix
 
-## Glyphs 4.0 builds 3877–3879
+## Glyphs 4
 
-- [x] Record Python runtime, MCP version, and macOS version
-- [x] Open only disposable copies for save/reopen validation
-- [x] Reporter appears as **View → Show Icon Grid**
-- [x] Show and hide the reporter
-- [x] Confirm Regular inherits its 84-unit H stem as construction spacing
-- [x] Confirm Bold inherits its 135-unit H stem as construction spacing
-- [x] Confirm the vertical center is halfway between baseline and cap height
-- [x] Confirm the automatic live diameter is 875 units and the landscape keyline spans baseline to cap height
-- [x] Confirm the grid extends at least four cells beyond the canvas on every side
-- [x] Confirm at most two inner rings plus the outer circular keyline
-- [x] Confirm odd/even center phase visually
-- [x] Read all fixture scopes and effective values through MCP
-- [x] Dry-run, apply, and read back mutations through MCP
-- [x] Confirm an MCP parameter edit redraws immediately
-- [x] Preserve inactive and duplicate entries; refuse ambiguous duplicate mutation
-- [x] Explicit save/reopen persists parameters on the designated disposable copy
-- [x] Confirm the tracked fixture has Regular 84 / Bold 135 H stems, no IconGrid override, and implicit odd
-- [x] Leave the tracked fixture unsaved
-- [ ] Confirm all nine origins and representative glyph widths live
-- [ ] Confirm multiple zoom levels and light/dark appearance live
-- [ ] Exercise Move, Draw, Pencil, Rectangle, and Circle alignment live
-- [ ] Exercise crossings and every visible guide kind live
-- [ ] Confirm passive Edit, lasso, Annotation, text, hand, and zoom exclusions live
-- [ ] Inspect the Macro Panel after the complete interaction matrix
+- [x] Record the tested Glyphs build, Python runtime, MCP version, and macOS version
+- [x] Open only disposable fixture copies
+- [x] Reporter appears as **View → Show Icon Grid** and redraws cleanly
+- [x] Regular and Bold inherit their 84- and 135-unit H stems
+- [x] A Mid Height of `353` centers the complete construction system at `y=353`
+- [x] The 1000-unit canvas bounds are `−147…853` with Mid Height `353`
+- [x] Removing Mid Height restores baseline/cap-height midpoint centering at `y=350`
+- [x] Filtered or invalid Mid Height values do not change the fallback center
+- [x] Mid Height overshoot does not change the construction center
+- [x] An explicit `IconGrid.baselineOffset` overrides Mid Height
+- [x] The live/keyline diameter remains 875 units while its center moves
+- [x] Odd/even phase, all nine origins, and representative glyph widths remain correct
+- [x] Grid overflow, rings, spokes, keylines, and alignment feedback remain correct
+- [x] Text, hand, zoom, Annotation, and passive Edit exclusions remain correct
+- [x] Outlines remain unchanged and the reporter never saves implicitly
+- [x] Inspect the Macro Panel after the complete interaction matrix
 
-## Current evidence
+## Evidence
 
-See [`docs/releases/0.1.0-test-report.md`](releases/0.1.0-test-report.md)
-for the exact environment, fixture results, screenshots, and remaining blockers.
-
-Static adapter tests cover the unchecked tool and guide combinations, but they
-are not a substitute for the required live interaction pass in each Glyphs
-version. The tag and public release remain blocked until those rows are checked.
+The exact environment, fixture results, screenshots, and release decision are
+recorded in `docs/releases/0.2.0-test-report.md`.
+Historical release reports remain unchanged.

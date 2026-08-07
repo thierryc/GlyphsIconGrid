@@ -4,6 +4,12 @@ Most users need **no IconGrid custom parameter**. When the active master has ste
 
 Leave font scope empty and leave every other `IconGrid.*` parameter unset unless you intentionally want to change a default. The plug-in supplies the canvas size, centering, guides, color, opacity, and alignment behavior automatically.
 
+Vertical centering also needs no custom parameter. The reporter uses the active
+master's first usable, unfiltered native Mid Height position and ignores its
+overshoot. When that metric is unavailable or invalid, it falls back to the
+baseline/cap-height midpoint. Store `IconGrid.baselineOffset` only for an
+intentional override.
+
 For the default Glyphs baseline at `0` and cap height at `700`, the number of stem-sized cells in that span is:
 
 ```text
@@ -18,13 +24,18 @@ The live circle and Material keylines use a separate metric-derived size:
 live diameter = (cap height − baseline) / 0.8
 ```
 
-At the default 700-unit cap height, the live diameter is 875 units. The landscape keyline is 80% of that diameter, so its lower and upper edges land exactly on the baseline and cap height. Store `IconGrid.padding` only to replace this automatic fit with a cell-based inset.
+At the default 700-unit cap height, the live diameter is 875 units. The
+landscape keyline is 80% of that diameter, so its lower and upper edges land on
+baseline and cap height when the construction center is their midpoint. A
+distinct Mid Height moves the keyline without changing its size. Store
+`IconGrid.padding` only to replace this automatic fit with a cell-based inset.
 
 ## What should I set?
 
 | Goal | Set |
 | --- | --- |
 | Match the grid to each master’s H stem | Define the master stems in Glyphs; set no IconGrid parameter |
+| Center on each master's Mid Height | Define an unfiltered native Mid Height in Glyphs; set no IconGrid parameter |
 | Override the stem-derived size | `IconGrid.gridSize` on the relevant master |
 | Put grid lines on the horizontal and vertical center axes | `IconGrid.gridMode = even`; otherwise leave the default `odd` |
 | Change appearance or guide visibility | Only the relevant optional parameter below |
@@ -86,7 +97,7 @@ You normally do not need these parameters. They remain available for backward co
 | `IconGrid.width` | Width of the fixed construction canvas in font units. It is not the glyph advance width. | Positive number | Font UPM, then active-master cap height, then `1000` |
 | `IconGrid.height` | Height of the fixed construction canvas in font units. | Positive number | Font UPM, then active-master cap height, then `1000` |
 | `IconGrid.origin` | How the fixed canvas is anchored horizontally to the glyph advance and vertically before the baseline offset is applied. | One of the nine origin names below | `bottom-center` |
-| `IconGrid.baselineOffset` | Explicit vertical translation of the canvas; positive values move it down. Setting it replaces automatic cap-height centering. | Finite number in font units | `(height − capHeight) / 2` for the default origin when cap height is valid; otherwise `0` |
+| `IconGrid.baselineOffset` | Explicit vertical translation of the canvas; positive values move it down. Setting it replaces automatic Mid Height or cap-height centering. | Finite number in font units | `height / 2 − midHeight` when usable; otherwise `(height − capHeight) / 2` for the default origin, then `0` |
 
 Supported origins are:
 
@@ -115,13 +126,20 @@ Each setting resolves independently:
 
 For a weight-specific construction unit, prefer the master’s native stem metric. Put an explicit `gridSize` on the master only when the icon construction unit intentionally differs. Shared appearance settings such as `color` can be placed at font scope.
 
+Native Mid Height is separate from custom-parameter inheritance. The reporter
+reads the active master's value from the font's first usable, unfiltered Mid
+Height definition. Filtered values and overshoot do not affect placement.
+
 Disabled parameters are ignored. Invalid values fall through safely and produce one deduplicated `IconGrid:` warning in the Macro Panel per plug-in session. Duplicate active records are ambiguous: the reporter warns and uses the last value, while the Glyphs MCP parameter tool refuses to modify that name until the duplicate is resolved.
 
 ## Behavior that needs no parameter
 
 - The default canvas is one em square and centered horizontally on the glyph advance.
-- Its vertical center is halfway between the baseline and cap height.
-- Its live circle is `capHeight / 0.8` when padding is unstored, so the landscape keyline spans baseline to cap height.
+- Its vertical center uses the active master's Mid Height when usable, then the
+  baseline/cap-height midpoint.
+- Its live circle is `capHeight / 0.8` when padding is unstored. The landscape
+  keyline spans baseline to cap height only when their midpoint is also the
+  construction center.
 - The square background grid extends by at least four cells on every side, capped at eight.
 - Stem-sized construction draws at most two inner circles; the circular keyline makes two or three visible circles in typical masters.
 - Draw, Rectangle/Square, and Circle show alignment feedback near guides.

@@ -24,6 +24,7 @@ class ConfigTests(unittest.TestCase):
         ascender=800,
         descender=-200,
         stem=None,
+        mid_height=None,
     ):
         return resolve_config(
             font_parameters=font or {},
@@ -34,6 +35,7 @@ class ConfigTests(unittest.TestCase):
             master_ascender=ascender,
             master_descender=descender,
             master_stem=stem,
+            master_mid_height=mid_height,
         )
 
     def test_defaults_are_complete_and_safe(self):
@@ -59,6 +61,49 @@ class ConfigTests(unittest.TestCase):
         self.assertAlmostEqual(config.opacity, 0.28)
         self.assertTrue(config.alignment_highlight)
         self.assertEqual(config.alignment_tolerance, 2.0)
+        self.assertEqual(warnings, [])
+
+    def test_mid_height_is_the_preferred_automatic_vertical_center(self):
+        config, warnings = self.resolve(mid_height=353)
+        self.assertEqual(config.baseline_offset, 147.0)
+        self.assertEqual(config.live_diameter, 875.0)
+        self.assertEqual(warnings, [])
+
+    def test_invalid_mid_height_falls_back_to_cap_height_centering(self):
+        for mid_height in (None, 0, -1, float("nan"), float("inf"), 10**12):
+            with self.subTest(mid_height=mid_height):
+                config, warnings = self.resolve(mid_height=mid_height)
+                self.assertEqual(config.baseline_offset, 150.0)
+                self.assertEqual(warnings, [])
+
+    def test_mid_height_works_without_cap_height(self):
+        config, warnings = self.resolve(cap_height=None, mid_height=353)
+        self.assertEqual(config.baseline_offset, 147.0)
+        self.assertIsNone(config.live_diameter)
+        self.assertEqual(config.padding, DEFAULTS["padding"])
+        self.assertEqual(warnings, [])
+
+    def test_explicit_baseline_offset_wins_over_mid_height(self):
+        font_config, font_warnings = self.resolve(
+            font={"IconGrid.baselineOffset": 125},
+            mid_height=353,
+        )
+        master_config, master_warnings = self.resolve(
+            font={"IconGrid.baselineOffset": 125},
+            master={"IconGrid.baselineOffset": 110},
+            mid_height=353,
+        )
+        self.assertEqual(font_config.baseline_offset, 125.0)
+        self.assertEqual(master_config.baseline_offset, 110.0)
+        self.assertEqual(font_warnings + master_warnings, [])
+
+    def test_custom_origin_does_not_apply_automatic_mid_height_offset(self):
+        config, warnings = self.resolve(
+            font={"IconGrid.origin": "center"},
+            mid_height=353,
+        )
+        self.assertEqual(config.origin, "center")
+        self.assertEqual(config.baseline_offset, 0.0)
         self.assertEqual(warnings, [])
 
     def test_unstored_padding_derives_live_diameter_from_cap_height(self):

@@ -5,12 +5,12 @@
   <key>CFBundleIdentifier</key>
   <string>com.thierryc.GlyphsIconGrid</string>
   <key>CFBundleShortVersionString</key>
-  <string>0.1.1</string>
+  <string>0.2.0</string>
   <key>CFBundleVersion</key>
-  <string>3</string>
+  <string>4</string>
   <key>productPageURL</key>
   <string>https://thierryc.github.io/GlyphsIconGrid/</string>
   <key>productReleaseNotes</key>
-  <string>Version 0.1.1 hardens Glyphs 4 hover rendering: cached guide hit-testing, active-view-only invalidation, drag-safe shape previews, bounded multi-node feedback, and guarded scale handling.</string>
+  <string>Version 0.2.0 centers the complete construction system on each master’s unfiltered Mid Height metric when available, while preserving cap-height fallback centering and explicit baseline-offset overrides.</string>
 </dict>
 </plist>

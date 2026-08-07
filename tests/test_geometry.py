@@ -178,6 +178,34 @@ class GeometryTests(unittest.TestCase):
         self.assertAlmostEqual(geometry.grid_bounds.xmax, 1000.0 + 1000.0 / 6.0)
         self.assertAlmostEqual(geometry.grid_bounds.ymax, 850.0 + 1000.0 / 6.0)
 
+    def test_mid_height_moves_the_complete_construction_system(self):
+        config = resolve_config(
+            {},
+            {},
+            master_cap_height=700,
+            font_upm=1000,
+            master_x_height=500,
+            master_ascender=800,
+            master_descender=-200,
+            master_mid_height=353,
+        )[0]
+        geometry = build_geometry(1000, config)
+        self.assertEqual(geometry.canvas.as_tuple(), (0.0, -147.0, 1000.0, 853.0))
+        self.assertEqual(geometry.center, (500.0, 353.0))
+        self.assertEqual(geometry.live_area.as_tuple(), (62.5, -84.5, 937.5, 790.5))
+        self.assertTrue(all(ring.cy == 353.0 for ring in geometry.rings))
+        self.assertTrue(all(spoke.y1 == 353.0 for spoke in geometry.spokes))
+        self.assertTrue(
+            all(keyline.y + keyline.height / 2.0 == 353.0 for keyline in geometry.keylines)
+        )
+        horizontal_positions = {
+            line.y1 for line in geometry.all_grid_lines() if line.y1 == line.y2
+        }
+        cell_size = 1000.0 / 24.0
+        self.assertIn(353.0 - cell_size / 2.0, horizontal_positions)
+        self.assertIn(353.0 + cell_size / 2.0, horizontal_positions)
+        self.assertNotIn(353.0, horizontal_positions)
+
     def test_metric_overflow_is_capped_to_keep_background_compact(self):
         config = resolve_config(
             {},

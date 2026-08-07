@@ -13,7 +13,8 @@ Visit the [GlyphsIconGrid website](https://thierryc.github.io/GlyphsIconGrid/) f
 ## Features
 
 - A 24 × 24 one-em square construction canvas by default.
-- Horizontal centering on the glyph advance and vertical centering between the baseline and cap height.
+- Horizontal centering on the glyph advance and master-native Mid Height
+  centering, with baseline-to-cap-height midpoint fallback.
 - An expanded background grid that reaches four stem-sized cells beyond the icon square in every direction.
 - A cell-centered `odd` grid by default, with an optional line-centered `even` mode.
 - Metric-fitted live area, up to two stem-spaced inner circles, radial spokes, and Material-derived circle, square, portrait, and landscape keylines.
@@ -41,6 +42,11 @@ No `IconGrid.*` parameter is required when the font has stem metrics:
 
 The reporter prefers a named H horizontal stem, then a named H vertical stem, and follows the selected master automatically. The attached research scaffold gives `84` for Regular and `135` for Bold at 1000 UPM; use measured values when the design already exists.
 
+For vertical placement, the reporter uses the active master's first usable,
+unfiltered native Mid Height position when one exists. It ignores that metric's
+overshoot and falls back to the midpoint between baseline and cap height. An
+explicit `IconGrid.baselineOffset` remains authoritative.
+
 The grid value is the stem itself. Its relationship to the default Glyphs cap-height span is:
 
 ```text
@@ -49,7 +55,11 @@ cap-height cells = (cap height − baseline) / H stem
 
 With the default 700-unit cap height, the 84-unit Regular stem spans 8.33 cells and the 135-unit Bold stem spans 5.19 cells. Set `IconGrid.gridSize` only when you need an explicit override. The default `odd` mode centers one grid cell on the construction axes; add `IconGrid.gridMode = even` only when the axes should coincide with grid lines.
 
-The unstored live/keyline diameter is `cap height / 0.8`: 875 units for the default 700-unit cap height. This makes the Material landscape rectangle run exactly from baseline to cap height. Store `IconGrid.padding` only when you intentionally want a cell-based inset instead.
+The unstored live/keyline diameter is `cap height / 0.8`: 875 units for the
+default 700-unit cap height. The Material landscape rectangle runs exactly from
+baseline to cap height when the construction center is their midpoint. A
+distinct Mid Height moves the rectangle without changing its dimensions. Store
+`IconGrid.padding` only when you intentionally want a cell-based inset instead.
 
 All other settings are optional. The [plain-language parameter guide](docs/PARAMETERS.md) separates the two normal controls from guide, appearance, and advanced compatibility options. See the [human user guide](docs/USER_GUIDE.md) for recipes and troubleshooting.
 

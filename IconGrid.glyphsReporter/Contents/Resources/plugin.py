@@ -7,7 +7,7 @@ import math
 
 import objc
 from AppKit import NSBezierPath, NSClassFromString, NSColor, NSMakeRect
-from GlyphsApp import Glyphs, MOUSEMOVED
+from GlyphsApp import Glyphs, GSMetricsTypeMidHeight, MOUSEMOVED
 from GlyphsApp.plugins import ReporterPlugin
 
 from glyphs_icon_grid.config import resolve_config
@@ -19,6 +19,7 @@ from glyphs_icon_grid.geometry import (
 )
 from glyphs_icon_grid.runtime import (
 	active_mouse_context,
+	master_metric_position,
 	parameter_entries,
 	preferred_master_stem,
 	resolve_layer_context,
@@ -352,6 +353,11 @@ class GlyphsIconGridReporter(ReporterPlugin):
 			master_ascender=getattr(context.master, "ascender", None),
 			master_descender=getattr(context.master, "descender", None),
 			master_stem=preferred_master_stem(context.font, context.master),
+			master_mid_height=master_metric_position(
+				context.font,
+				context.master,
+				GSMetricsTypeMidHeight,
+			),
 		)
 		for warning in warnings:
 			self._warn_once(warning)
