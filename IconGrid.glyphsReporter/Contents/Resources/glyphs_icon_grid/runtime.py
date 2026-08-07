@@ -9,6 +9,10 @@ from collections import namedtuple
 LayerContext = namedtuple("LayerContext", "layer glyph font master width")
 
 
+# NSNotFound can bridge through PyObjC as a very large finite integer.
+_GLYPHS_MISSING_METRIC_THRESHOLD = 1e15
+
+
 def parameter_entries(owner):
     entries = []
     if owner is None:
@@ -154,6 +158,77 @@ def preferred_master_stem(font, master):
         number = _first_legacy_stem(master, attribute)
         if number is not None:
             return number
+    return None
+
+
+def _metric_position(value):
+    try:
+        candidate = _object_value(value, "position")
+        number = float(candidate)
+    except (AttributeError, TypeError, ValueError, OverflowError):
+        return None
+    if not math.isfinite(number) or abs(number) >= _GLYPHS_MISSING_METRIC_THRESHOLD:
+        return None
+    return number
+
+
+def _metric_value(values, definition, index):
+    if values is None:
+        return None
+    keys = []
+    for attribute in ("id", "identifier"):
+        try:
+            key = _object_value(definition, attribute)
+        except Exception:
+            key = None
+        if key is not None:
+            keys.append(key)
+    keys.extend((index, str(index)))
+    for key in keys:
+        try:
+            value = values[key]
+        except (IndexError, KeyError, TypeError, AttributeError):
+            continue
+        position = _metric_position(value)
+        if position is not None:
+            return position
+    return None
+
+
+def master_metric_position(font, master, metric_type):
+    """Return the first usable unfiltered master metric position.
+
+    Glyphs stores metric definitions on the font and their weight-specific
+    values on each master. ``metrics`` is the current API; ``metricValues`` is
+    retained as a compatibility fallback for older Glyphs 3 wrappers.
+    """
+
+    try:
+        definitions = tuple(_object_value(font, "metrics"))
+    except (AttributeError, TypeError):
+        return None
+
+    value_sources = []
+    for attribute in ("metrics", "metricValues"):
+        try:
+            values = _object_value(master, attribute)
+        except (AttributeError, TypeError):
+            continue
+        if values is not None:
+            value_sources.append(values)
+
+    for index, definition in enumerate(definitions):
+        try:
+            if _object_value(definition, "type") != metric_type:
+                continue
+            if _object_value(definition, "filter") is not None:
+                continue
+        except Exception:
+            continue
+        for values in value_sources:
+            position = _metric_value(values, definition, index)
+            if position is not None:
+                return position
     return None
 
 

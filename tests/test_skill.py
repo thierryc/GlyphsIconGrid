@@ -32,6 +32,8 @@ class GlyphsMcpIconGridSkillTests(unittest.TestCase):
         self.assertIn("review_master_stem_metrics", source)
         self.assertIn("no `gridSize` when a usable master H stem exists", source)
         self.assertIn("default `IconGrid.gridMode = odd`", source)
+        self.assertIn("native Mid Height position", source)
+        self.assertIn("ignores its overshoot", source)
         self.assertIn("minimal configuration, not for all supported parameters", source)
         self.assertIn("Never set `columns`, `rows`, or `rings`", source)
         self.assertIn("which built-in defaults remain intentionally unstored", source)
@@ -47,6 +49,8 @@ class GlyphsMcpIconGridSkillTests(unittest.TestCase):
 
     def test_reference_lists_every_supported_parameter_once(self):
         source = read(os.path.join("references", "parameters.md"))
+        self.assertIn("native Mid Height position", source)
+        self.assertIn("`IconGrid.baselineOffset` replaces either automatic path", source)
         names = re.findall(r"\| `(IconGrid\.[A-Za-z]+)` \|", source)
         self.assertEqual(
             names,

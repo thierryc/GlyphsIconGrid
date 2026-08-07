@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 — 2026-08-06
+
+- Centers the complete construction system on each active master's native,
+  unfiltered Mid Height metric when one has a usable position.
+- Preserves baseline-to-cap-height midpoint centering when Mid Height is
+  unavailable and keeps explicit `IconGrid.baselineOffset` values authoritative.
+- Keeps the live/keyline diameter cap-height-derived while moving its center
+  with the master metric, with matching Glyphs 3.5 and Glyphs 4 coverage.
+
 ## 0.1.1 — 2026-07-27
 
 - Prevents hover feedback from invalidating every Glyphs Edit and Preview view, preserving Glyphs 4 shape-tool previews during native drags.

@@ -20,6 +20,8 @@ class ReleaseContractTests(unittest.TestCase):
             update = plistlib.load(handle)
         for key in ("CFBundleIdentifier", "CFBundleShortVersionString", "CFBundleVersion"):
             self.assertEqual(bundle[key], update[key])
+        self.assertIn("Version 0.2.0", update["productReleaseNotes"])
+        self.assertIn("Mid Height", update["productReleaseNotes"])
         self.assertEqual(
             bundle["UpdateFeedURL"],
             "https://thierryc.github.io/GlyphsIconGrid/update/Info.plist",
@@ -27,7 +29,7 @@ class ReleaseContractTests(unittest.TestCase):
 
     def test_release_contract_and_checksum(self):
         archive = package_script.main()
-        result = release_check.validate(tag="v0.1.1", require_artifacts=True)
+        result = release_check.validate(tag="v0.2.0", require_artifacts=True)
         self.assertTrue(result["ok"], result["errors"])
         self.assertTrue(os.path.isfile(archive + ".sha256"))
 

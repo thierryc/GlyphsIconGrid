@@ -25,11 +25,17 @@ class BundleTests(unittest.TestCase):
         self.assertEqual(info["CFBundleIdentifier"], "com.thierryc.GlyphsIconGrid")
         self.assertEqual(info["CFBundleName"], "IconGrid")
         self.assertEqual(info["NSPrincipalClass"], "GlyphsIconGridReporter")
-        self.assertEqual(info["CFBundleShortVersionString"], "0.1.1")
-        self.assertEqual(info["CFBundleVersion"], "3")
+        self.assertEqual(info["CFBundleShortVersionString"], "0.2.0")
+        self.assertEqual(info["CFBundleVersion"], "4")
         self.assertEqual(
             info["productPageURL"], "https://thierryc.github.io/GlyphsIconGrid/"
         )
+        with open(
+            os.path.join(RESOURCES, "glyphs_icon_grid", "__init__.py"),
+            "r",
+            encoding="utf-8",
+        ) as handle:
+            self.assertIn('__version__ = "0.2.0"', handle.read())
 
     def test_all_python_sources_parse(self):
         for directory, _subdirectories, files in os.walk(RESOURCES):
@@ -65,7 +71,7 @@ class BundleTests(unittest.TestCase):
         plugin_source = os.path.join(RESOURCES, "plugin.py")
         self.assertTrue(os.access(plugin_source, os.X_OK))
 
-    def test_tracked_fixture_has_two_masters_and_weight_matched_h_stems(self):
+    def test_tracked_fixture_has_two_masters_stems_and_mid_heights(self):
         fixture = os.path.join(ROOT, "tests", "fixtures", "IconGrid-Test.glyphs")
         with open(fixture, "r", encoding="utf-8") as handle:
             source = handle.read()
@@ -77,6 +83,16 @@ class BundleTests(unittest.TestCase):
         self.assertIn('name = "H Horizontal Stem";', source)
         self.assertIn("stemValues = (\n84\n);", source)
         self.assertIn("stemValues = (\n135\n);", source)
+        self.assertEqual(source.count("type = midHeight;"), 1)
+        self.assertEqual(source.count("pos = 353;"), 2)
+        self.assertEqual(
+            source.count("pos = 500;\n},\n{\npos = 353;\n},\n{\n},\n{\npos = -200;"),
+            2,
+        )
+        self.assertIn(
+            'type = "x-height";\n},\n{\ntype = midHeight;\n},\n{\ntype = baseline;',
+            source,
+        )
 
     def test_release_archive_includes_bundle_skill_installer_license_and_notice(self):
         output = package_script.main()

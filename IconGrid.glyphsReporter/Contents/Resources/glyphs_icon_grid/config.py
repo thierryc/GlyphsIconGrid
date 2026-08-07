@@ -354,6 +354,7 @@ def resolve_config(
     master_ascender=None,
     master_descender=None,
     master_stem=None,
+    master_mid_height=None,
 ):
     """Return ``(GridConfig, warnings)`` using master-over-font precedence."""
 
@@ -400,9 +401,15 @@ def resolve_config(
     )
     origin = _choose("origin", _origin, master, font, DEFAULTS["origin"], warnings)
     cap_height = _bounded_metric(master_cap_height, font_upm, positive=True)
+    # Empty GSMetricStore values bridge as 0.0 in current Glyphs builds, so a
+    # usable native Mid Height must be positive as well as finite and bounded.
+    mid_height = _bounded_metric(master_mid_height, font_upm, positive=True)
     default_baseline_offset = DEFAULTS["baseline_offset"]
-    if origin == DEFAULTS["origin"] and cap_height is not None:
-        default_baseline_offset = (height - cap_height) / 2.0
+    if origin == DEFAULTS["origin"]:
+        if mid_height is not None:
+            default_baseline_offset = height / 2.0 - mid_height
+        elif cap_height is not None:
+            default_baseline_offset = (height - cap_height) / 2.0
     baseline_offset = _choose(
         "baselineOffset", _number, master, font, default_baseline_offset, warnings
     )

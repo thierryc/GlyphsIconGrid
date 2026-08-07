@@ -130,6 +130,20 @@ class StemDefinition(object):
         self.horizontal = horizontal
 
 
+class MetricDefinition(object):
+    def __init__(self, metric_type, metric_id, predicate=None):
+        self.type = metric_type
+        self.id = metric_id
+        self.identifier = metric_id
+        self.filter = predicate
+
+
+class MetricValue(object):
+    def __init__(self, position, overshoot=0):
+        self.position = position
+        self.overshoot = overshoot
+
+
 class FakeGraphicView(object):
     def __init__(self, layer, window):
         self.layer = layer
@@ -292,16 +306,20 @@ def layer_fixture(
     selection=None,
     stem_definitions=None,
     stem_values=None,
+    metric_definitions=None,
+    metric_values=None,
 ):
     font = owner(**(font_parameters or {}))
     font.upm = 1000
     font.stems = list(stem_definitions or [])
+    font.metrics = list(metric_definitions or [])
     master = owner(**(master_parameters or {}))
     master.ascender = 800
     master.capHeight = 700
     master.xHeight = 500
     master.descender = -200
     master.stems = stem_values or {}
+    master.metrics = metric_values or {}
     glyph = type("Glyph", (), {"parent": font})()
     return type(
         "Layer",
@@ -331,6 +349,7 @@ class PluginAdapterTests(unittest.TestCase):
         appkit.NSClassFromString = lambda name: name
         glyphs = types.ModuleType("GlyphsApp")
         glyphs.Glyphs = FAKE_GLYPHS
+        glyphs.GSMetricsTypeMidHeight = 5
         glyphs.MOUSEMOVED = "mouseMovedNotification"
         plugins = types.ModuleType("GlyphsApp.plugins")
         plugins.ReporterPlugin = FakeReporterPlugin
@@ -433,6 +452,27 @@ class PluginAdapterTests(unittest.TestCase):
         self.assertEqual(geometry.center, (500.0, 350.0))
         self.assertEqual(len(geometry.rings), 2)
         self.assertTrue(all(ring.radius % 84.0 == 0 for ring in geometry.rings))
+
+    def test_master_mid_height_centers_the_complete_rendered_geometry(self):
+        layer = layer_fixture(
+            metric_definitions=[
+                MetricDefinition(5, "filtered", predicate="category == symbol"),
+                MetricDefinition(5, "mid-height"),
+            ],
+            metric_values={
+                "filtered": MetricValue(400),
+                "mid-height": MetricValue(353, overshoot=12),
+            },
+        )
+        config, geometry = self.plugin._geometry_for_layer(layer)
+        self.assertEqual(config.baseline_offset, 147.0)
+        self.assertEqual(geometry.canvas.as_tuple(), (0.0, -147.0, 1000.0, 853.0))
+        self.assertEqual(geometry.center, (500.0, 353.0))
+        self.assertTrue(all(ring.cy == 353.0 for ring in geometry.rings))
+        self.assertTrue(all(spoke.y1 == 353.0 for spoke in geometry.spokes))
+        self.assertTrue(
+            all(keyline.y + keyline.height / 2.0 == 353.0 for keyline in geometry.keylines)
+        )
 
     def test_missing_layer_is_safe_noop(self):
         self.assertIsNone(self.plugin.background(None))

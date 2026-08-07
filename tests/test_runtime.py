@@ -5,6 +5,7 @@ import unittest
 from tests import support  # noqa: F401
 from glyphs_icon_grid.runtime import (
     active_mouse_context,
+    master_metric_position,
     parameter_entries,
     preferred_master_stem,
     resolve_layer_context,
@@ -40,6 +41,20 @@ class StemDefinition(object):
         self.name = name
         self.horizontal = horizontal
         self.id = stem_id
+
+
+class MetricDefinition(object):
+    def __init__(self, metric_type, metric_id, predicate=None, identifier=None):
+        self.type = metric_type
+        self.id = metric_id
+        self.identifier = identifier
+        self.filter = predicate
+
+
+class MetricValue(object):
+    def __init__(self, position, overshoot=0):
+        self.position = position
+        self.overshoot = overshoot
 
 
 class RuntimeTests(unittest.TestCase):
@@ -122,6 +137,56 @@ class RuntimeTests(unittest.TestCase):
             master.stems = values
             self.assertIsNone(preferred_master_stem(font, master))
         self.assertIsNone(preferred_master_stem(Owner(), Owner()))
+
+    def test_master_metric_position_uses_first_usable_unfiltered_definition(self):
+        font = Owner()
+        font.metrics = [
+            MetricDefinition(5, "filtered", predicate="category == symbol"),
+            MetricDefinition(4, "x-height"),
+            MetricDefinition(5, "missing"),
+            MetricDefinition(5, "mid-height"),
+            MetricDefinition(5, "later"),
+        ]
+        master = Owner()
+        master.metrics = {
+            "filtered": MetricValue(999),
+            "x-height": MetricValue(500),
+            "missing": MetricValue(float("nan")),
+            "mid-height": MetricValue(353, overshoot=27),
+            "later": MetricValue(360),
+        }
+        self.assertEqual(master_metric_position(font, master, 5), 353.0)
+        bold_master = Owner()
+        bold_master.metrics = {"mid-height": MetricValue(360)}
+        self.assertEqual(master_metric_position(font, bold_master, 5), 360.0)
+
+    def test_master_metric_position_supports_identifier_index_and_legacy_values(self):
+        font = Owner()
+        font.metrics = [
+            MetricDefinition(5, None, identifier="mid-height-id"),
+        ]
+        master = Owner()
+        master.metrics = {}
+        master.metricValues = {"mid-height-id": MetricValue(353)}
+        self.assertEqual(master_metric_position(font, master, 5), 353.0)
+
+        font.metrics = [MetricDefinition(5, None)]
+        master.metricValues = [MetricValue(354)]
+        self.assertEqual(master_metric_position(font, master, 5), 354.0)
+
+    def test_master_metric_position_safely_ignores_missing_and_sentinel_values(self):
+        font = Owner()
+        font.metrics = [MetricDefinition(5, "mid-height")]
+        for values in (
+            {},
+            {"mid-height": object()},
+            {"mid-height": MetricValue(float("inf"))},
+            {"mid-height": MetricValue(9223372036854775807)},
+        ):
+            master = Owner()
+            master.metrics = values
+            self.assertIsNone(master_metric_position(font, master, 5))
+        self.assertIsNone(master_metric_position(Owner(), Owner(), 5))
 
     def test_layer_context_is_safe_for_missing_objects(self):
         self.assertIsNone(resolve_layer_context(None))

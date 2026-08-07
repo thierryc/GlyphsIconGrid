@@ -11,6 +11,10 @@ Configure GlyphsIconGrid through the guarded generic custom-parameter tools in G
 
 - Treat an unspecified “set up Icon Grid” request as a request for the minimal configuration, not for all supported parameters.
 - Explain that normal setup inherits the active master’s H stem and stores no `IconGrid.gridSize`. Mention `IconGrid.gridMode` only when the user needs grid lines rather than a complete cell centered on the axes.
+- Explain that automatic vertical placement uses the active master's first
+  usable unfiltered native Mid Height position, ignores its overshoot, and
+  otherwise falls back to the baseline/cap-height midpoint. Never write a
+  custom parameter merely to duplicate that automatic center.
 - Leave font scope and every other parameter unstored so the plug-in can use its built-in defaults.
 - Never set `columns`, `rows`, or `rings` when a valid `gridSize` is being used. Report existing values as shadowed; remove them only when the user authorizes simplification.
 - Treat width, height, origin, baseline offset, count-based divisions, and ring count as advanced controls. Before previewing one, read [references/parameters.md](references/parameters.md) and explain in one sentence what it changes and when it applies.

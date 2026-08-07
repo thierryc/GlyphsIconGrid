@@ -41,14 +41,15 @@ With no `IconGrid.*` custom parameters, the plug-in provides an icon-oriented la
 - the 24 × 24 count-based spacing when no usable stem is available;
 - an `odd`, cell-centered grid phase: one central cell is bisected by both construction axes;
 - horizontal centering on the active layer's advance width;
-- vertical centering halfway between the baseline and cap height;
-- a metric-fitted live circle whose landscape keyline spans baseline to cap height;
+- vertical centering on the active master's unfiltered native Mid Height when
+  available, with baseline-to-cap-height midpoint fallback;
+- a cap-height-fitted live circle that moves with the construction center;
 - a major line every four cells, eight radial spokes, up to two inner concentric circles, and Material-derived keylines;
 - a blue `#0A84FF` color at `0.28` opacity, distinct from Glyphs' metric and user guides.
 
 The background grid extends by whole cells beyond the construction canvas in all four directions. It includes at least four extra cells per side and expands far enough to leave working room past the ascender/cap-height and descender when possible. Automatic overflow is capped at eight cells per side so the field covers more of the Edit view without becoming unbounded.
 
-The canvas itself, live-area frames, circles, spokes, and keylines stay inside their configured bounds. Only the background grid overflows; its cells remain square under the default configuration. With no stored padding, the live diameter is `(cap height − baseline) / 0.8`, clamped to the canvas. A 700-unit cap height therefore produces an 875-unit live circle. Stem-sized construction uses at most two inner circles. Together with the outer circular keyline, this produces no more than three useful visible circles.
+The canvas itself, live-area frames, circles, spokes, and keylines stay inside their configured bounds. Only the background grid overflows; its cells remain square under the default configuration. With no stored padding, the live diameter is `(cap height − baseline) / 0.8`, clamped to the canvas. A 700-unit cap height therefore produces an 875-unit live circle. When Mid Height differs from the baseline/cap-height midpoint, this diameter is unchanged and the entire construction system moves to the Mid Height position. Stem-sized construction uses at most two inner circles. Together with the outer circular keyline, this produces no more than three useful visible circles.
 
 ## Configure a font or master
 
@@ -80,9 +81,25 @@ See the [plain-language parameter guide](PARAMETERS.md) for what every setting c
 
 ### Position and cell shape
 
-The default `bottom-center` origin centers the canvas horizontally on the glyph advance. Its automatic baseline offset places the canvas center halfway between the baseline and cap height. Setting `IconGrid.baselineOffset` explicitly replaces that automatic vertical placement; positive values move the canvas down.
+The default `bottom-center` origin centers the canvas horizontally on the glyph
+advance. Define Mid Height under **File → Font Info → Masters → Metrics** when
+the icon family has a master-specific construction center. For vertical
+placement, the reporter finds the first usable,
+unfiltered native Mid Height definition and reads its position from the active
+master. The position centers the canvas, live area, circles, spokes, and
+keylines; the metric's overshoot is ignored. If Mid Height is unavailable or
+invalid, the reporter centers halfway between baseline and cap height.
+Setting `IconGrid.baselineOffset` explicitly replaces either automatic path;
+positive values move the canvas down. A non-default `IconGrid.origin` retains
+its configured vertical anchor unless a baseline offset is also stored.
 
-The automatic live diameter is `cap height / 0.8`. Material’s landscape rectangle is 80% of that diameter, so it runs exactly from the baseline to cap height. The 90% square is intentionally larger than that vertical span. For the default metrics, the resulting keylines are an 875-unit circle, a 787.5-unit square, a 700 × 875 portrait rectangle, and an 875 × 700 landscape rectangle.
+The automatic live diameter is `cap height / 0.8`. Material’s landscape
+rectangle is 80% of that diameter, so it runs exactly from baseline to cap
+height only when their midpoint is also the construction center. A distinct
+Mid Height moves the rectangle without resizing it. The 90% square is
+intentionally larger than that vertical span. For the default metrics, the
+resulting keylines are an 875-unit circle, a 787.5-unit square, a 700 × 875
+portrait rectangle, and an 875 × 700 landscape rectangle.
 
 For square cells, keep this relationship:
 
@@ -162,7 +179,10 @@ Delete the relevant `IconGrid.*` record from the master to inherit the font valu
 ### The grid is not centered as expected
 
 - Remove explicit `IconGrid.origin`, `IconGrid.baselineOffset`, `IconGrid.width`, and `IconGrid.height` values to restore the default font-aligned placement.
-- Check the active master's cap height. The automatic vertical center is halfway between its baseline and cap height.
+- Check the active master's unfiltered Mid Height. A usable position is the
+  automatic vertical center; its overshoot is ignored.
+- If the master has no usable Mid Height, check its cap height. The fallback
+  center is halfway between baseline and cap height.
 - Check for a master-level override; it takes precedence over the font one.
 - Check `IconGrid.gridMode`: `odd` centers a cell on the construction axes, while `even` centers intersecting grid lines.
 - Confirm the glyph has the intended advance width. Horizontal centering follows the active layer's advance, not its outline bounds.

@@ -16,7 +16,20 @@ The first two layers import neither Glyphs nor AppKit. There are no mutable glob
 
 ## Geometry
 
-The canvas has configured fixed width and height. By default, both equal the font UPM and both axes have 24 divisions, producing a one-em square construction canvas of square cells. Its horizontal origin anchors the left edge at x=0, the center at half the active layer advance, or the right edge at the advance. With the default `bottom-center` origin, the automatic baseline offset is `(height − capHeight) / 2`, placing the canvas center halfway between the baseline and cap height. The layer width therefore controls horizontal placement only: it never changes cell spacing, rings, or keyline proportions. An explicit `baselineOffset` replaces the automatic vertical placement.
+The canvas has configured fixed width and height. By default, both equal the
+font UPM and both axes have 24 divisions, producing a one-em square
+construction canvas of square cells. Its horizontal origin anchors the left
+edge at x=0, the center at half the active layer advance, or the right edge at
+the advance. With the default `bottom-center` origin, the reporter reads the
+first usable unfiltered `GSMetricsTypeMidHeight` definition from `font.metrics`
+and the matching active-master position from `master.metrics`, with
+`metricValues` as a compatibility fallback. It ignores metric overshoot. A
+usable position produces `baselineOffset = height / 2 − midHeight`; otherwise
+the existing `(height − capHeight) / 2` fallback applies, then zero when neither
+metric is usable. The layer width therefore controls horizontal placement only:
+it never changes cell spacing, rings, or keyline proportions. An explicit
+`baselineOffset` replaces the automatic vertical placement, and non-default
+origins retain their configured anchor behavior.
 
 Without a grid-size custom parameter, the reporter first reads the active master’s stem metrics. It prefers a named capital-H horizontal stem, then a named H vertical stem, then the first horizontal and vertical definitions. A usable value becomes the exact square-cell size and circular spacing. If no usable stem exists, the grid uses `IconGrid.width / columns` and `IconGrid.height / rows` spacing. A valid `IconGrid.columns`, `IconGrid.rows`, or `IconGrid.rings` parameter intentionally selects that count-based model. An explicit valid `IconGrid.gridSize` replaces either automatic path and takes precedence over the division counts. The background grid extends symmetrically by equal whole-cell counts on all sides. It includes at least four complete cells beyond the construction canvas and expands far enough to clear the active master’s cap-height/ascender and descender extents, capped at eight cells per side. The expanded field remains finite while covering more of the glyph drawing area; the canvas and live-area frames remain unchanged.
 
@@ -24,7 +37,11 @@ Grid phase and major-line cadence are centered on the translated canvas in both 
 
 When `IconGrid.padding` is unstored and cap height is valid, the live area is a centered square whose diameter is `(capHeight − baseline) / 0.8`, clamped to the smaller canvas dimension. With the default metrics this is 875 units. A valid stored padding value replaces that automatic fit and insets the live area by `padding` effective horizontal and vertical cells. If cap height is unavailable, the fallback is two cells. Without `IconGrid.gridSize`, the configured ring count is distributed evenly through the live radius and defaults to two. With `gridSize`, up to two inner rings use that same value as their exact radial spacing; the ring count is ignored. The enabled circular keyline supplies the outer construction circle, so the reporter never shows more than three concentric construction circles. Spokes share the ring center and are evenly spaced over 360°.
 
-The ring, spoke, and keyline center is the canvas center. Under default placement, its x coordinate is half the glyph advance and its y coordinate is halfway between the baseline and the active master’s cap height. This is the font-aligned construction center for inline icon design; the reporter does not reposition glyph outlines.
+The ring, spoke, and keyline center is the canvas center. Under default
+placement, its x coordinate is half the glyph advance and its y coordinate is
+the active master's usable Mid Height position, falling back to halfway between
+baseline and cap height. This is the font-aligned construction center for
+inline icon design; the reporter does not reposition glyph outlines.
 
 Keylines scale Material’s 24-unit proportions to the live-circle diameter:
 
@@ -33,7 +50,11 @@ Keylines scale Material’s 24-unit proportions to the live-circle diameter:
 - portrait: 16/20 × 20/20
 - landscape: 20/20 × 16/20
 
-Consequently, under automatic sizing the landscape keyline spans exactly from baseline to cap height. The 18/20 square is a distinct, larger vertical construction shape.
+Consequently, under automatic sizing the landscape keyline spans exactly from
+baseline to cap height only when the construction center is their midpoint. A
+distinct Mid Height translates the keyline without changing its cap-height-
+derived dimensions. The 18/20 square is a distinct, larger vertical
+construction shape.
 
 Stroke widths are specified in screen pixels and divided by the current zoom scale.
 
@@ -53,4 +74,7 @@ Eligible node positions are hit-tested in one batch by the pure geometry core ag
 
 The reporter is a no-op without a usable layer, glyph, font, active master, finite positive layer width, finite positive configured width and height, supported drawing context, or finite positive cached Edit-view scale. Alignment highlighting additionally requires either a node that actually participates in a native drag or an active outline-construction point from a supported tool. Mouse-observer failures are contained, clear temporary hover state, and warn once by exception type. Spacing values that would exceed the 256-cell or 128-ring geometry limits are invalid. Values outside documented limits, malformed colors, non-finite numbers, and unknown origins fall through the master/font/default chain. Warnings are deduplicated by complete message for the reporter session.
 
-Glyphs 3 and Glyphs 4 are handled through their shared duck-typed layer/font/master/stem/custom-parameter APIs. Stem values are read only; the reporter never creates or changes a stem definition. The adapter tests inject both shapes and assert identical core geometry.
+Glyphs 3 and Glyphs 4 are handled through their shared duck-typed
+layer/font/master/metric/stem/custom-parameter APIs. Metric and stem values are
+read only; the reporter never creates or changes their definitions. The adapter
+tests inject both shapes and assert identical core geometry.

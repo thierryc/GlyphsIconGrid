@@ -13,7 +13,7 @@ Normal setup inherits the active master’s H stem and requires no `IconGrid.gri
 | `IconGrid.width` | Fixed construction-canvas width; not the glyph advance. | Positive number in font units | Font UPM, cap height, then `1000` |
 | `IconGrid.height` | Fixed construction-canvas height. | Positive number in font units | Font UPM, cap height, then `1000` |
 | `IconGrid.origin` | Horizontal advance anchoring and the initial vertical anchor of the fixed canvas. | One supported origin below | `bottom-center` |
-| `IconGrid.baselineOffset` | Explicit vertical translation; positive moves the canvas down and replaces automatic cap-height centering. | Finite number in font units | `(height − capHeight) / 2` for the default origin when cap height is valid; otherwise `0` |
+| `IconGrid.baselineOffset` | Explicit vertical translation; positive moves the canvas down and replaces automatic Mid Height or cap-height centering. | Finite number in font units | `height / 2 − midHeight` when usable; otherwise `(height − capHeight) / 2` for the default origin, then `0` |
 | `IconGrid.padding` | Explicit inset between the canvas edge and live circle/keyline area, measured in effective cells. Storing it replaces the automatic metric fit. | Non-negative number of grid cells | Unstored: live diameter is `(capHeight − baseline) / 0.8`, clamped to the canvas; `2` cells if cap height is unavailable |
 | `IconGrid.majorEvery` | Emphasizes every Nth grid line; `0` removes major-line emphasis. | Integer `0–256` | `4` |
 | `IconGrid.rings` | Count of evenly distributed circles when `gridSize` is unset; ignored when `gridSize` supplies exact spacing. | Integer `0–128` | `2` |
@@ -35,6 +35,11 @@ Use native JSON booleans with MCP. Human-entered Glyphs values also accept `on/o
 A valid `IconGrid.gridSize` is the master’s explicit construction unit. It sets both square-cell size and the radial distance between up to two inner concentric circles, taking precedence over `columns`, `rows`, and `rings`. The circular keyline supplies the outer circle, so typical masters show two or three useful circles in total. Delete `gridSize` to restore the master-stem default. If there is no usable stem, the reporter restores the count-based settings. A valid explicit `columns`, `rows`, or `rings` value also intentionally selects the count-based model.
 
 `IconGrid.gridMode = odd` centers one cell on the canvas centerlines and is the normal default. `IconGrid.gridMode = even` puts a grid border on each centerline. Keep this shared at font scope unless the arrangement intentionally differs by master.
+
+Automatic vertical placement uses the active master's first usable unfiltered
+native Mid Height position and ignores its overshoot. If no usable Mid Height
+exists, the reporter falls back to the baseline/cap-height midpoint. An explicit
+`IconGrid.baselineOffset` replaces either automatic path.
 
 ## Generic weight-matched stem scaffold
 

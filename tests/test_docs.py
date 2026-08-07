@@ -114,6 +114,7 @@ class DocumentationTests(unittest.TestCase):
         index = os.path.join(output, "index.html")
         with open(index, "r", encoding="utf-8") as handle:
             source = handle.read()
+        self.assertIn('href="styles.css?v=0.2.0-4"', source)
         self.assertIn('id="install"', source)
         self.assertIn('id="configure"', source)
         self.assertIn('id="mcp"', source)
@@ -131,7 +132,10 @@ class DocumentationTests(unittest.TestCase):
         self.assertIn("Regular · 84", source)
         self.assertIn("Bold · 135", source)
         self.assertIn("875 units at the default cap height", source)
-        self.assertIn("span exactly from baseline to cap height", source)
+        self.assertIn("unfiltered native Mid Height", source)
+        self.assertIn("baseline/cap-height midpoint", source)
+        self.assertIn("Mid Height overshoot is ignored", source)
+        self.assertIn("moves it without resizing it", source)
         self.assertEqual(source.count('href="https://ap.cx"'), 2)
         self.assertIn('href="https://ap.cx/tools/glyphs-mcp"', source)
         self.assertIn(
